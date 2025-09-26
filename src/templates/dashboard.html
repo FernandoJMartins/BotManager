@@ -1,0 +1,219 @@
+{% extends "base.html" %} {% block title %}Dashboard - Telegram Bot Manager{%
+endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h2">
+    <i class="fas fa-tachometer-alt me-2"></i>
+    Dashboard
+  </h1>
+  <div class="text-muted">Bem-vindo, {{ current_user.username }}!</div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card stat-card">
+      <div class="card-body text-center">
+        <i class="fas fa-robot fa-2x mb-2"></i>
+        <h3 class="mb-0">{{ user_stats.total_bots }}</h3>
+        <small>Total de Bots</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-success text-white">
+      <div class="card-body text-center">
+        <i class="fas fa-play-circle fa-2x mb-2"></i>
+        <h3 class="mb-0">{{ user_stats.active_bots }}</h3>
+        <small>Bots Ativos</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-info text-white">
+      <div class="card-body text-center">
+        <i class="fas fa-plus-circle fa-2x mb-2"></i>
+        <h3 class="mb-0">{{ user_stats.remaining_slots }}</h3>
+        <small>Slots Disponíveis</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body text-center">
+        <i class="fas fa-coins fa-2x mb-2"></i>
+        <h3 class="mb-0">R$ 0,70</h3>
+        <small>Preço por Bot</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ações rápidas -->
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-bolt me-2"></i>
+          Ações Rápidas
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <a
+              href="{{ url_for('bots.create_bot') }}"
+              class="btn btn-primary btn-lg w-100"
+              {%
+              if
+              not
+              user_stats.can_add_more
+              %}disabled{%
+              endif
+              %}
+            >
+              <i class="fas fa-plus me-2"></i>
+              Criar Novo Bot
+            </a>
+            {% if not user_stats.can_add_more %}
+            <small class="text-muted">Limite de 30 bots atingido</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <a
+              href="{{ url_for('bots.list_bots') }}"
+              class="btn btn-outline-primary btn-lg w-100"
+            >
+              <i class="fas fa-list me-2"></i>
+              Gerenciar Bots
+            </a>
+          </div>
+          <div class="col-md-4 mb-3">
+            <a
+              href="{{ url_for('auth.profile') }}"
+              class="btn btn-outline-secondary btn-lg w-100"
+            >
+              <i class="fas fa-user me-2"></i>
+              Ver Perfil
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bots recentes -->
+{% if recent_bots %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-clock me-2"></i>
+          Bots Recentes
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Bot</th>
+                <th>Status</th>
+                <th>Criado em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for bot in recent_bots %}
+              <tr>
+                <td>
+                  <i class="fas fa-robot me-2"></i>
+                  <strong>{{ bot.bot_name or bot.bot_username }}</strong>
+                  <br />
+                  <small class="text-muted">@{{ bot.bot_username }}</small>
+                </td>
+                <td>
+                  {% if bot.is_running %}
+                  <span class="badge bg-success">
+                    <i class="fas fa-play me-1"></i>
+                    Rodando
+                  </span>
+                  {% elif bot.is_paid %}
+                  <span class="badge bg-warning">
+                    <i class="fas fa-pause me-1"></i>
+                    Parado
+                  </span>
+                  {% else %}
+                  <span class="badge bg-danger">
+                    <i class="fas fa-credit-card me-1"></i>
+                    Pendente
+                  </span>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ bot.created_at.strftime('%d/%m/%Y %H:%M') if bot.created_at
+                  }}
+                </td>
+                <td>
+                  {% if bot.is_paid %}
+                  <span class="badge bg-success">
+                    <i class="fas fa-check me-1"></i>
+                    Ativo
+                  </span>
+                  {% else %}
+                  <a
+                    href="{{ url_for('bots.payment_status', bot_id=bot.id) }}"
+                    class="btn btn-sm btn-outline-warning"
+                  >
+                    <i class="fas fa-credit-card me-1"></i>
+                    Pagar
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-center mt-3">
+          <a
+            href="{{ url_for('bots.list_bots') }}"
+            class="btn btn-outline-primary"
+          >
+            Ver Todos os Bots
+            <i class="fas fa-arrow-right ms-2"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <i class="fas fa-robot fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Nenhum bot criado ainda</h4>
+        <p class="text-muted">Comece criando seu primeiro bot do Telegram!</p>
+        <a
+          href="{{ url_for('bots.create_bot') }}"
+          class="btn btn-primary btn-lg"
+        >
+          <i class="fas fa-plus me-2"></i>
+          Criar Primeiro Bot
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  // Auto-refresh da página a cada 30 segundos para atualizar status dos bots
+  setTimeout(function () {
+    location.reload();
+  }, 30000);
+</script>
+{% endblock %}

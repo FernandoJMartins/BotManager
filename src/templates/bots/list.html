@@ -1,0 +1,121 @@
+{% extends "base.html" %} {% block title %}Meus Bots - Telegram Bot Manager{%
+endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="fas fa-robot me-2"></i>Meus Bots</h2>
+  {% if can_add_more %}
+  <a href="{{ url_for('bots.create_bot') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Novo Bot
+  </a>
+  {% else %}
+  <span class="badge bg-warning">Limite de 30 bots atingido</span>
+  {% endif %}
+</div>
+
+{% if bots %}
+<div class="row">
+  {% for bot in bots %}
+  <div class="col-md-6 col-lg-4 mb-4">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h6 class="mb-0">{{ bot.name }}</h6>
+        <span
+          class="badge bg-{{ 'success' if bot.is_active else 'secondary' }}"
+        >
+          {{ 'Ativo' if bot.is_active else 'Inativo' }}
+        </span>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          <i class="fas fa-key me-1"></i>
+          Token: {{ bot.token[:10] }}...
+        </p>
+        <p class="text-muted small mb-2">
+          <i class="fas fa-calendar me-1"></i>
+          Criado: {{ bot.created_at.strftime('%d/%m/%Y') }}
+        </p>
+        <p class="text-muted small mb-3">
+          <i class="fas fa-credit-card me-1"></i>
+          Pagamento:
+          <span
+            class="badge bg-{{ 'success' if bot.payment_status == 'paid' else 'warning' }}"
+          >
+            {{ 'Pago' if bot.payment_status == 'paid' else 'Pendente' }}
+          </span>
+        </p>
+
+        <div class="btn-group w-100" role="group">
+          <button
+            class="btn btn-outline-primary btn-sm"
+            onclick="editBot({{ bot.id }})"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
+          <button
+            class="btn btn-outline-danger btn-sm"
+            onclick="deleteBot({{ bot.id }}, '{{ bot.name }}')"
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+          {% if not bot.is_active and bot.payment_status != 'paid' %}
+          <button
+            class="btn btn-outline-success btn-sm"
+            onclick="payBot({{ bot.id }})"
+          >
+            <i class="fas fa-credit-card"></i> PIX
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+  <h4 class="text-muted">Nenhum bot cadastrado</h4>
+  <p class="text-muted">Crie seu primeiro bot para começar!</p>
+  {% if can_add_more %}
+  <a href="{{ url_for('bots.create_bot') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Criar Primeiro Bot
+  </a>
+  {% endif %}
+</div>
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  function editBot(botId) {
+    // Implementar edição
+    alert("Funcionalidade de edição em desenvolvimento");
+  }
+
+  function deleteBot(botId, botName) {
+    if (confirm(`Tem certeza que deseja excluir o bot "${botName}"?`)) {
+      fetch(`/bots/${botId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert("Erro ao excluir bot: " + data.message);
+          }
+        })
+        .catch((error) => {
+          alert("Erro ao excluir bot");
+        });
+    }
+  }
+
+  function payBot(botId) {
+    // Implementar pagamento PIX
+    alert("Redirecionando para pagamento PIX...");
+    window.location.href = `/bots/${botId}/payment`;
+  }
+</script>
+{% endblock %}
