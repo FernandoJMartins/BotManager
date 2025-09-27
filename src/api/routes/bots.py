@@ -6,7 +6,6 @@ from datetime import datetime
 from ...models.bot import TelegramBot
 from ...models.payment import Payment
 from ...database.models import db
-from ...services.telegram_validation import TelegramValidationService
 from ...services.pushinpay_service import PushinPayService
 from ...utils.logger import logger
 
