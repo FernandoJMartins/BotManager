@@ -34,7 +34,6 @@ def list_bots():
             'status': bot.get_status(),
             'is_active': bot.is_active,
             'is_running': bot.is_running,
-            'is_paid': bot.is_paid,
             'created_at': bot.created_at.isoformat() if bot.created_at else None
         })
     
@@ -86,9 +85,23 @@ def create_bot():
     if request.method == 'POST':
         data = request.get_json() if request.is_json else request.form
         
-        token = data.get('token')
-        welcome_message = data.get('welcome_message', '')
-        pix_values = data.get('pix_values', '[]')  # JSON string
+        token = data.get('token', '').strip()
+        name = data.get('name', '').strip()
+        welcome_message = data.get('welcome_message', '').strip() or "Olá! Bem-vindo ao meu bot!"
+        
+        # Processa valores PIX
+        pix_values_raw = request.form.getlist('pix_values[]') if not request.is_json else data.get('pix_values', [])
+        pix_values = []
+        for value in pix_values_raw:
+            if value and float(value) > 0:
+                pix_values.append(float(value))
+        
+        # Se não tem valores, usa padrões
+        if not pix_values:
+            pix_values = [10.0, 20.0, 50.0]
+        
+        import json
+        pix_values_json = json.dumps(pix_values)
         
         if not token:
             if request.is_json:
@@ -146,14 +159,11 @@ def create_bot():
             bot = TelegramBot(
                 bot_token=token,
                 bot_username=validation_result['username'],
-                bot_name=validation_result['first_name'],
+                bot_name=name or validation_result['first_name'],
                 welcome_message=welcome_message,
-                welcome_image=welcome_image_path,
-                welcome_audio=welcome_audio_path,
-                pix_values=pix_values,
+                pix_values=pix_values_json,
                 user_id=current_user.id,
-                is_active=False,  # Será ativado após pagamento
-                is_paid=False
+                is_active=True  # Ativo imediatamente
             )
             
             db.session.add(bot)
@@ -164,59 +174,41 @@ def create_bot():
                 flash('Configure seu token PushinPay no perfil antes de criar bots.', 'error')
                 return redirect(url_for('auth.profile'))
             
-            # Gera pagamento PIX
-            pix_service = PushinPayService()
-            pix_data = pix_service.create_pix_payment(
-                user_pushinpay_token=current_user.pushinpay_token,
-                user_id=current_user.id,
-                bot_id=bot.id,
-                description=f"Ativacao Bot {validation_result['username']}"
-            )
-            
-            # Verifica se o PIX foi gerado com sucesso
-            if not pix_data.get('success'):
-                flash(f'Erro ao gerar PIX: {pix_data.get("error", "Erro desconhecido")}', 'error')
-                return render_template('bots/create.html')
-            
-            # Cria registro de pagamento
-            payment = Payment(
-                pix_code=pix_data.get('pix_code', str(bot.id)),
-                amount=float(pix_data.get('amount', 0.70)),
-                pix_key=pix_data.get('pix_copy_paste', ''),
-                pix_qr_code=pix_data.get('qr_code', ''),
-                expires_at=pix_data.get('expires_at'),
-                user_id=current_user.id,
-                bot_id=bot.id
-            )
-            
-            db.session.add(payment)
+            # Bot é criado diretamente ativo (sem necessidade de pagamento interno)
+            bot.is_active = True
             db.session.commit()
+            
+            # Inicia o bot Telegram automaticamente
+            from ...services.telegram_bot_manager import bot_manager
+            import asyncio
+            
+            def start_bot_async():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(bot_manager.start_bot(bot))
+            
+            import threading
+            bot_thread = threading.Thread(target=start_bot_async, daemon=True)
+            bot_thread.start()
             
             if request.is_json:
                 return jsonify({
                     'success': True,
                     'bot_id': bot.id,
-                    'payment': {
-                        'pix_code': pix_data['pix_code'],
-                        'amount': pix_data['amount'],
-                        'qr_code': pix_data['qr_code'],
-                        'pix_copy_paste': pix_data['pix_copy_paste'],
-                        'expires_at': pix_data['expires_at'].isoformat()
-                    },
-                    'message': 'Bot criado! Realize o pagamento para ativá-lo.'
+                    'message': 'Bot criado e ativado com sucesso!'
                 }), 201
             
-            flash('Bot criado com sucesso! Realize o pagamento para ativá-lo.', 'success')
-            return redirect(url_for('bots.payment_status', bot_id=bot.id))
+            flash('Bot criado e ativado com sucesso!', 'success')
+            return redirect(url_for('dashboard'))
             
         except Exception as e:
             db.session.rollback()
             if request.is_json:
                 return jsonify({'error': f'Erro ao criar bot: {str(e)}'}), 500
             flash(f'Erro ao criar bot: {str(e)}', 'error')
-            return render_template('bots/create.html')
+            return render_template('bots/create_new.html')
     
-    return render_template('bots/create.html')
+    return render_template('bots/create_new.html')
 
 
 @bots_bp.route('/payment/<int:bot_id>', methods=['GET'])
@@ -226,13 +218,13 @@ def payment_status(bot_id):
     bot = TelegramBot.query.filter_by(id=bot_id, user_id=current_user.id).first()
     if not bot:
         flash('Bot não encontrado.', 'error')
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('dashboard'))
     
     # Busca pagamento pendente
     payment = Payment.query.filter_by(bot_id=bot_id).filter(Payment.status == 'pending').first()
     if not payment:
         flash('Pagamento não encontrado.', 'error')
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('dashboard'))
     
     return render_template('bots/payment.html', bot=bot, payment=payment)
 
@@ -244,10 +236,6 @@ def check_payment_status_api(bot_id):
     bot = TelegramBot.query.filter_by(id=bot_id, user_id=current_user.id).first()
     if not bot:
         return jsonify({'error': 'Bot não encontrado'}), 404
-    
-    # Verifica se bot já está pago
-    if bot.is_paid:
-        return jsonify({'paid': True, 'status': 'confirmed'})
     
     # Busca pagamento pendente
     payment = Payment.query.filter_by(bot_id=bot_id).filter(Payment.status == 'pending').first()
@@ -267,7 +255,6 @@ def check_payment_status_api(bot_id):
                 # Confirma pagamento localmente
                 payment.status = 'completed'
                 payment.paid_at = datetime.utcnow()
-                bot.is_paid = True
                 bot.is_active = True
                 db.session.commit()
                 

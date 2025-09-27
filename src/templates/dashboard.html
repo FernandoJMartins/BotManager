@@ -140,15 +140,10 @@ endblock %} {% block content %}
                     <i class="fas fa-play me-1"></i>
                     Rodando
                   </span>
-                  {% elif bot.is_paid %}
+                  {% else %}
                   <span class="badge bg-warning">
                     <i class="fas fa-pause me-1"></i>
                     Parado
-                  </span>
-                  {% else %}
-                  <span class="badge bg-danger">
-                    <i class="fas fa-credit-card me-1"></i>
-                    Pendente
                   </span>
                   {% endif %}
                 </td>
@@ -157,7 +152,7 @@ endblock %} {% block content %}
                   }}
                 </td>
                 <td>
-                  {% if bot.is_paid %}
+                  {% if bot.is_active %}
                   <span class="badge bg-success">
                     <i class="fas fa-check me-1"></i>
                     Ativo

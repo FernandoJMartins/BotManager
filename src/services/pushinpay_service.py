@@ -18,24 +18,23 @@ class PushinPayService:
     
     def __init__(self):
         self.api_base_url = "https://api.pushinpay.com.br/api"
-        self.split_account = "9E4B259F-DB6D-419E-8D78-7216BF642856"  # Sua conta para receber o split
-        self.bot_price = Decimal('0.70')  # Taxa fixa por bot
+        self.split_account = "9E4B259F-DB6D-419E-8D78-7216BF642856"  # Conta para receber comissão
     
-    def create_pix_payment(self, user_pushinpay_token: str, user_id: int, bot_id: int, description: str = None) -> dict:
+    def create_pix_payment(self, user_pushinpay_token: str, amount: float, telegram_user_id: str = None, description: str = None) -> dict:
         """
-        Cria um pagamento PIX via PushinPay API
+        Cria um pagamento PIX via PushinPay API para cliente final
         
         Args:
-            user_pushinpay_token (str): Token Bearer da PushinPay do usuário
-            user_id (int): ID do usuário
-            bot_id (int): ID do bot
+            user_pushinpay_token (str): Token Bearer da PushinPay do dono do bot
+            amount (float): Valor do PIX
+            telegram_user_id (str): ID do usuário do Telegram
             description (str): Descrição do pagamento
             
         Returns:
             dict: Dados do pagamento PIX gerado
         """
         if not description:
-            description = f"Ativacao Bot Telegram #{bot_id}"
+            description = f"Pagamento via Bot Telegram"
         
         # Headers para a API
         headers = {
@@ -43,11 +42,21 @@ class PushinPayService:
             'Content-Type': 'application/json'
         }
         
+        # Calcula comissão (5% para a plataforma)
+        commission_percent = 0.05
+        commission_value = int(amount * commission_percent * 100)  # Em centavos
+        
         # Payload para criar cobrança PIX (valores em centavos)
         payload = {
-            "value": int(self.bot_price * 100),  # 0.70 reais = 70 centavos
-            "webhook_url": "http://localhost:5000/webhook/pushinpay"  # URL do webhook
-            # Removendo split_rules temporariamente para testar
+            "value": int(amount * 100),  # Valor total em centavos
+            "webhook_url": "http://localhost:5000/webhook/pushinpay",  # URL do webhook
+            "description": description,
+            "split_rules": [
+                {
+                    "value": commission_value,  # 5% para a plataforma
+                    "account_id": self.split_account
+                }
+            ]
         }
         
         try:
@@ -100,14 +109,14 @@ class PushinPayService:
                     return {
                         'success': True,
                         'pix_code': api_data.get('id', str(uuid.uuid4())[:8]),
-                        'amount': self.bot_price,
+                        'amount': amount,
                         'qr_code': api_data.get('qr_code_base64', ''),  # Base64 da imagem QR
                         'pix_copy_paste': api_data.get('qr_code', ''),  # Código PIX para copiar
                         'payment_id': api_data.get('id'),
                         'expires_at': datetime.utcnow() + timedelta(hours=24),
                         'description': description,
                         'status': api_data.get('status', 'created'),
-                        'value_cents': api_data.get('value', int(self.bot_price * 100)),
+                        'value_cents': api_data.get('value', int(amount * 100)),
                         'pushinpay_data': api_data
                     }
                 except ValueError as json_error:
@@ -129,45 +138,46 @@ class PushinPayService:
                 
                 # Para desenvolvimento, usa PIX simulado em caso de erro
                 print(f"API falhou com {response.status_code}, usando PIX simulado")
-                return self._create_mock_pix_payment(bot_id, description)
+                return self._create_mock_pix_payment(amount, description)
                 
         except requests.exceptions.RequestException as e:
             print(f"Erro de conexão com PushinPay: {str(e)}")
             # Retorna PIX simulado para desenvolvimento
             print("Usando PIX simulado devido a erro de conexão")
-            return self._create_mock_pix_payment(bot_id, description)
+            return self._create_mock_pix_payment(amount, description)
             
         except Exception as e:
             print(f"Erro inesperado: {str(e)}")
             # Retorna PIX simulado para desenvolvimento  
             print("Usando PIX simulado devido a erro inesperado")
-            return self._create_mock_pix_payment(bot_id, description)
+            return self._create_mock_pix_payment(amount, description)
     
-    def _create_mock_pix_payment(self, bot_id: int, description: str) -> dict:
+    def _create_mock_pix_payment(self, amount: float, description: str) -> dict:
         """Cria um PIX simulado para desenvolvimento"""
-        mock_id = f"9c29870c-9f69-4bb6-90d3-{bot_id:012d}"
+        import random
+        mock_id = f"9c29870c-9f69-4bb6-90d3-{random.randint(1000, 9999):012d}"
         
         # QR Code base64 simulado (imagem 1x1 pixel transparente)
         mock_qr_base64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         
         # Código PIX simulado no formato EMV
-        mock_pix_code = f"00020126580014BR.GOV.BCB.PIX0136{mock_id}520400005303986540{int(self.bot_price * 100):02d}5802BR5909PUSHINPAY6009SAO+PAULO62070503***6304ABCD"
+        mock_pix_code = f"00020126580014BR.GOV.BCB.PIX0136{mock_id}520400005303986540{int(amount * 100):02d}5802BR5909PUSHINPAY6009SAO+PAULO62070503***6304ABCD"
         
         return {
             'success': True,
             'pix_code': mock_id,
-            'amount': self.bot_price,
+            'amount': amount,
             'qr_code': mock_qr_base64,  # Base64 da imagem QR
             'pix_copy_paste': mock_pix_code,  # Código PIX para copiar
             'payment_id': mock_id,
             'expires_at': datetime.utcnow() + timedelta(hours=24),
             'description': description,
             'status': 'created',
-            'value_cents': int(self.bot_price * 100),
+            'value_cents': int(amount * 100),
             'pushinpay_data': {
                 'id': mock_id,
                 'status': 'created',
-                'value': int(self.bot_price * 100),
+                'value': int(amount * 100),
                 'webhook_url': "http://localhost:5000/webhook/pushinpay",
                 'qr_code_base64': mock_qr_base64,
                 'qr_code': mock_pix_code,

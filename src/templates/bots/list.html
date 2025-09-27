@@ -28,20 +28,20 @@ endblock %} {% block content %}
       </div>
       <div class="card-body">
         <p class="text-muted small mb-2">
-          <i class="fas fa-key me-1"></i>
-          Token: {{ bot.token[:10] }}...
+          <i class="fas fa-user me-1"></i>
+          Username: @{{ bot.username }}
         </p>
         <p class="text-muted small mb-2">
           <i class="fas fa-calendar me-1"></i>
-          Criado: {{ bot.created_at.strftime('%d/%m/%Y') }}
+          Criado: {{ bot.created_at[:10] if bot.created_at else 'N/A' }}
         </p>
         <p class="text-muted small mb-3">
-          <i class="fas fa-credit-card me-1"></i>
-          Pagamento:
+          <i class="fas fa-info-circle me-1"></i>
+          Status:
           <span
-            class="badge bg-{{ 'success' if bot.payment_status == 'paid' else 'warning' }}"
+            class="badge bg-{{ 'success' if bot.is_running else 'secondary' }}"
           >
-            {{ 'Pago' if bot.payment_status == 'paid' else 'Pendente' }}
+            {{ 'Rodando' if bot.is_running else 'Parado' }}
           </span>
         </p>
 
@@ -58,12 +58,12 @@ endblock %} {% block content %}
           >
             <i class="fas fa-trash"></i>
           </button>
-          {% if not bot.is_active and bot.payment_status != 'paid' %}
+          {% if not bot.is_running %}
           <button
             class="btn btn-outline-success btn-sm"
-            onclick="payBot({{ bot.id }})"
+            onclick="startBot({{ bot.id }})"
           >
-            <i class="fas fa-credit-card"></i> PIX
+            <i class="fas fa-play"></i> Iniciar
           </button>
           {% endif %}
         </div>

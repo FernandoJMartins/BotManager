@@ -331,8 +331,7 @@ class BotManagerService:
             try:
                 # Busca bots que deveriam estar rodando
                 active_bots = TelegramBot.query.filter_by(
-                    is_active=True, 
-                    is_paid=True
+                    is_active=True
                 ).all()
                 
                 for bot_config in active_bots:
@@ -348,7 +347,7 @@ class BotManagerService:
                 # Remove bots que não deveriam estar rodando
                 for bot_id, bot_runner in list(self.active_bots.items()):
                     bot_config = TelegramBot.query.get(bot_id)
-                    if not bot_config or not bot_config.is_active or not bot_config.is_paid:
+                    if not bot_config or not bot_config.is_active:
                         self.stop_bot(bot_id)
                 
                 # Aguarda antes da próxima verificação
@@ -364,9 +363,7 @@ class BotManagerService:
             if bot_config.id in self.active_bots:
                 return False  # Bot já está rodando
             
-            if not bot_config.is_paid:
-                logger.warning(f"Tentativa de iniciar bot não pago: {bot_config.bot_username}")
-                return False
+
             
             # Cria runner do bot
             bot_runner = TelegramBotRunner(bot_config)

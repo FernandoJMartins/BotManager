@@ -125,10 +125,7 @@ endblock %} {% block content %}
               <i class="fas fa-sync-alt me-2"></i>
               Verificar Pagamento
             </button>
-            <a
-              href="{{ url_for('dashboard.index') }}"
-              class="btn btn-secondary"
-            >
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
               <i class="fas fa-arrow-left me-2"></i>
               Voltar ao Dashboard
             </a>
@@ -196,7 +193,7 @@ endblock %} {% block content %}
                     </div>
                 `;
           setTimeout(() => {
-            window.location.href = "{{ url_for('dashboard.index') }}";
+            window.location.href = "{{ url_for('dashboard') }}";
           }, 2000);
         } else {
           statusDiv.innerHTML = `

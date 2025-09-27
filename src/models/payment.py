@@ -6,8 +6,10 @@ class Payment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     pix_code = db.Column(db.String(255), unique=True, nullable=False)
-    amount = db.Column(db.Float, nullable=False, default=0.70)  # Taxa fixa de R$ 0,70
+    amount = db.Column(db.Float, nullable=False)  # Valor escolhido pelo cliente final
     status = db.Column(db.String(50), default='pending')  # pending, completed, failed, expired
+    
+    # Informações do cliente final serão capturadas via webhook
     
     # Dados do PIX
     pix_key = db.Column(db.String(255), nullable=True)
@@ -23,16 +25,11 @@ class Payment(db.Model):
     bot_id = db.Column(db.Integer, db.ForeignKey('telegram_bots.id'), nullable=False)
     
     def process_payment(self):
-        """Processa o pagamento e ativa o bot"""
+        """Processa o pagamento do cliente final"""
         self.status = "completed"
         self.paid_at = datetime.utcnow()
         
-        # Ativa o bot correspondente
-        if self.bot:
-            self.bot.is_paid = True
-            self.bot.is_active = True
-        
-        print(f"Payment {self.pix_code} processed successfully.")
+        print(f"Pagamento {self.pix_code} de R$ {self.amount} confirmado para @{self.telegram_username}")
     
     def is_expired(self):
         """Verifica se o pagamento expirou"""

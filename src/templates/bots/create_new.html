@@ -1,0 +1,326 @@
+{% extends "base.html" %} {% block title %}Criar Bot - Telegram Bot Manager{%
+endblock %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+          <i class="fas fa-plus me-2"></i>
+          Criar Novo Bot Telegram
+        </h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <!-- Informações Básicas -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label">
+                  <i class="fas fa-tag me-1"></i>
+                  Nome do Bot
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  name="name"
+                  required
+                  autofocus
+                  maxlength="100"
+                  placeholder="Ex: Meu Bot de Vendas"
+                />
+                <small class="form-text text-muted">
+                  Nome para identificar seu bot no dashboard
+                </small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="token" class="form-label">
+                  <i class="fas fa-key me-1"></i>
+                  Token do Bot
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="token"
+                  name="token"
+                  required
+                  placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+                />
+                <small class="form-text text-muted">
+                  Token obtido do @BotFather no Telegram
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensagem de Boas-vindas -->
+          <div class="mb-4">
+            <label for="welcome_message" class="form-label">
+              <i class="fas fa-comment me-1"></i>
+              Mensagem de Boas-vindas
+            </label>
+            <textarea
+              class="form-control"
+              id="welcome_message"
+              name="welcome_message"
+              rows="3"
+              placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
+            ></textarea>
+            <small class="form-text text-muted">
+              Mensagem que será enviada quando alguém digitar /start
+            </small>
+          </div>
+
+          <!-- Mídia de Boas-vindas -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="welcome_image" class="form-label">
+                  <i class="fas fa-image me-1"></i>
+                  Imagem de Boas-vindas (opcional)
+                </label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="welcome_image"
+                  name="welcome_image"
+                  accept="image/*"
+                />
+                <small class="form-text text-muted">
+                  Imagem que será enviada junto com a mensagem de boas-vindas
+                </small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="welcome_audio" class="form-label">
+                  <i class="fas fa-volume-up me-1"></i>
+                  Áudio de Boas-vindas (opcional)
+                </label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="welcome_audio"
+                  name="welcome_audio"
+                  accept="audio/*"
+                />
+                <small class="form-text text-muted">
+                  Áudio que será enviado junto com a mensagem (se não houver
+                  imagem)
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Valores PIX -->
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="fas fa-money-bill-wave me-1"></i>
+              Valores PIX Disponíveis
+            </label>
+            <div class="card bg-light">
+              <div class="card-body">
+                <div id="pix-values-container">
+                  <div class="row pix-value-row">
+                    <div class="col-md-4">
+                      <input
+                        type="number"
+                        class="form-control"
+                        name="pix_values[]"
+                        placeholder="10.00"
+                        step="0.01"
+                        min="0.01"
+                      />
+                    </div>
+                    <div class="col-md-4">
+                      <input
+                        type="number"
+                        class="form-control"
+                        name="pix_values[]"
+                        placeholder="20.00"
+                        step="0.01"
+                        min="0.01"
+                      />
+                    </div>
+                    <div class="col-md-4">
+                      <input
+                        type="number"
+                        class="form-control"
+                        name="pix_values[]"
+                        placeholder="50.00"
+                        step="0.01"
+                        min="0.01"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    onclick="addPixValue()"
+                  >
+                    <i class="fas fa-plus me-1"></i>
+                    Adicionar Valor
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    onclick="removePixValue()"
+                  >
+                    <i class="fas fa-minus me-1"></i>
+                    Remover Valor
+                  </button>
+                </div>
+
+                <small class="form-text text-muted">
+                  Configure os valores que aparecerão como botões no seu bot.
+                  Deixe em branco campos não utilizados.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informações Importantes -->
+          <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle me-2"></i>Como funciona:</h6>
+            <ul class="mb-0">
+              <li>Seu bot ficará ativo 24/7 automaticamente</li>
+              <li>
+                Qualquer pessoa que enviar /start receberá sua mensagem e botões
+                de valores
+              </li>
+              <li>
+                Quando clicarem em um valor, será gerado um PIX real via sua
+                conta PushinPay
+              </li>
+              <li>
+                Você receberá os pagamentos diretamente (menos 5% de comissão da
+                plataforma)
+              </li>
+              <li>
+                O cliente será notificado automaticamente quando o pagamento for
+                confirmado
+              </li>
+            </ul>
+          </div>
+
+          <!-- Botões de Ação -->
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a
+              href="{{ url_for('dashboard') }}"
+              class="btn btn-secondary me-md-2"
+            >
+              <i class="fas fa-arrow-left me-2"></i>
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-robot me-2"></i>
+              Criar e Ativar Bot
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let pixValueCount = 3;
+
+  function addPixValue() {
+    if (pixValueCount >= 10) {
+      alert("Máximo de 10 valores PIX permitidos");
+      return;
+    }
+
+    const container = document.getElementById("pix-values-container");
+    const newRow = document.createElement("div");
+    newRow.className = "row pix-value-row mt-2";
+
+    for (let i = 0; i < 3; i++) {
+      const col = document.createElement("div");
+      col.className = "col-md-4";
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "form-control";
+      input.name = "pix_values[]";
+      input.placeholder = "0.00";
+      input.step = "0.01";
+      input.min = "0.01";
+
+      col.appendChild(input);
+      newRow.appendChild(col);
+    }
+
+    container.appendChild(newRow);
+    pixValueCount += 3;
+  }
+
+  function removePixValue() {
+    const container = document.getElementById("pix-values-container");
+    const rows = container.querySelectorAll(".pix-value-row");
+
+    if (rows.length > 1) {
+      container.removeChild(rows[rows.length - 1]);
+      pixValueCount -= 3;
+    }
+  }
+
+  // Validação do formulário
+  document.querySelector("form").addEventListener("submit", function (e) {
+    const pixInputs = document.querySelectorAll('input[name="pix_values[]"]');
+    const hasValue = Array.from(pixInputs).some(
+      (input) => input.value && parseFloat(input.value) > 0
+    );
+
+    if (!hasValue) {
+      e.preventDefault();
+      alert("Configure pelo menos um valor PIX para o seu bot!");
+      return;
+    }
+
+    // Verificar se o token está no formato correto
+    const token = document.getElementById("token").value;
+    const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
+
+    if (!tokenPattern.test(token)) {
+      e.preventDefault();
+      alert(
+        "Token do bot inválido! Verifique se copiou corretamente do @BotFather."
+      );
+      return;
+    }
+  });
+</script>
+
+<style>
+  .pix-value-row {
+    margin-bottom: 0.5rem;
+  }
+
+  .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+  }
+
+  .card-header {
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  }
+
+  .btn {
+    border-radius: 6px;
+  }
+</style>
+{% endblock %}

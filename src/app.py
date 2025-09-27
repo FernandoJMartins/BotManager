@@ -14,6 +14,9 @@ from .api.routes.webhooks import webhook_bp
 
 # Importa serviços
 from .services.bot_runner import bot_manager_service
+from .services.telegram_bot_manager import bot_manager
+import asyncio
+import threading
 
 def create_app():
     app = Flask(__name__)
@@ -84,6 +87,32 @@ def create_app():
         bot_manager_service.shutdown()
     
     atexit.register(shutdown_handler)
+    
+    # Inicia bots Telegram em thread separada
+    def start_telegram_bots():
+        """Inicia todos os bots Telegram ativos e mantém rodando"""
+        with app.app_context():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            async def run_bots():
+                await bot_manager.start_all_active_bots()
+                # Mantém o loop rodando indefinidamente
+                while True:
+                    await asyncio.sleep(1)
+            
+            try:
+                loop.run_until_complete(run_bots())
+            except KeyboardInterrupt:
+                print("Bot thread interrompida")
+            except Exception as e:
+                print(f"Erro na thread do bot: {e}")
+            finally:
+                loop.close()
+    
+    # Thread para rodar os bots Telegram
+    bot_thread = threading.Thread(target=start_telegram_bots, daemon=True)
+    bot_thread.start()
     
     return app
 
