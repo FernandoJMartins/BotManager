@@ -15,7 +15,9 @@ class TelegramBot(db.Model):
     welcome_audio = db.Column(db.String(500), nullable=True)  # File ID do Telegram
     pix_values = db.Column(db.JSON, nullable=True, default='[]')  # Lista de valores para PIX [10.0, 20.0, 50.0]
     plan_names = db.Column(db.JSON, nullable=True, default='[]')  # Lista de nomes dos planos ["VIP SEMANAL", "PREMIUM MENSAL"]
-    
+    id_vip = db.Column(db.String(255))
+    id_logs = db.Column(db.String(255))
+
     # Status e controle
     is_active = db.Column(db.Boolean, default=True)  # Bot está ativo quando criado
     is_running = db.Column(db.Boolean, default=False)
@@ -69,6 +71,44 @@ class TelegramBot(db.Model):
             return self.plan_names or []
         except:
             return []
+    
+    def has_vip_group(self) -> bool:
+        """Verifica se o bot tem grupo VIP configurado"""
+        return bool(self.id_vip and self.id_vip.strip())
+    
+    def has_log_group(self) -> bool:
+        """Verifica se o bot tem grupo de logs configurado"""
+        return bool(self.id_logs and self.id_logs.strip())
+    
+    def get_vip_group_id(self) -> str:
+        """Retorna ID do grupo VIP formatado"""
+        if self.has_vip_group():
+            # Garante que o ID está no formato correto
+            group_id = self.id_vip.strip()
+            if not group_id.startswith('-'):
+                group_id = f"-{group_id}"
+            return group_id
+        return None
+    
+    def get_log_group_id(self) -> str:
+        """Retorna ID do grupo de logs formatado"""
+        if self.has_log_group():
+            # Garante que o ID está no formato correto
+            group_id = self.id_logs.strip()
+            if not group_id.startswith('-'):
+                group_id = f"-{group_id}"
+            return group_id
+        return None
+    
+    def is_fully_configured(self) -> bool:
+        """Verifica se o bot está completamente configurado"""
+        return (
+            bool(self.bot_token) and
+            bool(self.bot_username) and
+            self.has_vip_group() and
+            self.has_log_group() and
+            bool(self.get_pix_values())
+        )
     
     def __repr__(self):
         return f"TelegramBot(username={self.bot_username}, active={self.is_active})"

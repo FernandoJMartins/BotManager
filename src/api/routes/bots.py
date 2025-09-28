@@ -262,4 +262,106 @@ def check_payment_status_api(bot_id):
         except Exception as e:
             logger.error(f"Erro ao verificar pagamento: {e}")
     
-    return jsonify({'paid': False, 'status': 'pending'})
+        return jsonify({'paid': False, 'status': 'pending'})
+
+@bots_bp.route('/edit/<slug>', methods=['GET', 'POST'])
+@login_required
+def edit_bot(slug):
+    """Edita um bot através da slug única"""
+    # Busca o bot pela slug (que é o ID do bot)
+    try:
+        bot_id = int(slug)
+        bot = TelegramBot.query.get_or_404(bot_id)
+    except ValueError:
+        flash('Bot não encontrado.', 'error')
+        return redirect(url_for('bots.list_bots'))
+    
+    # Verifica se o usuário tem permissão (dono do bot ou admin)
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Você não tem permissão para editar este bot.', 'error')
+        return redirect(url_for('bots.list_bots'))
+    
+    if request.method == 'POST':
+        try:
+            # Atualiza informações básicas
+            bot.bot_name = request.form.get('name', '').strip()
+            bot.bot_token = request.form.get('token', '').strip()
+            bot.welcome_message = request.form.get('welcome_message', '').strip()
+            
+            # Atualiza valores PIX e nomes dos planos
+            pix_values = []
+            plan_names = []
+            
+            for value in request.form.getlist('pix_values[]'):
+                if value and float(value) > 0:
+                    pix_values.append(float(value))
+            
+            for name in request.form.getlist('plan_names[]'):
+                if name and name.strip():
+                    plan_names.append(name.strip())
+            
+            bot.pix_values = pix_values
+            bot.plan_names = plan_names
+            
+            # Atualiza IDs dos grupos
+            id_vip = request.form.get('id_vip', '').strip()
+            id_logs = request.form.get('id_logs', '').strip()
+            
+            if id_vip:
+                # Remove @ ou qualquer prefixo e mantém apenas números e -
+                id_vip = id_vip.replace('@', '').replace('https://t.me/', '')
+                if not id_vip.startswith('-'):
+                    id_vip = '-' + id_vip
+                bot.id_vip = id_vip
+            else:
+                bot.id_vip = None
+                
+            if id_logs:
+                # Remove @ ou qualquer prefixo e mantém apenas números e -
+                id_logs = id_logs.replace('@', '').replace('https://t.me/', '')
+                if not id_logs.startswith('-'):
+                    id_logs = '-' + id_logs
+                bot.id_logs = id_logs
+            else:
+                bot.id_logs = None
+            
+            # Processa upload de imagem de boas-vindas
+            if 'welcome_image' in request.files:
+                file = request.files['welcome_image']
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                    
+                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(file_path)
+                    bot.welcome_image = file_path
+            
+            # Processa upload de áudio de boas-vindas
+            if 'welcome_audio' in request.files:
+                file = request.files['welcome_audio']
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                    
+                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(file_path)
+                    bot.welcome_audio = file_path
+            
+            db.session.commit()
+            
+            flash('Bot atualizado com sucesso!', 'success')
+            logger.info(f"Bot {bot.bot_name} (ID: {bot.id}) atualizado pelo usuário {current_user.email}")
+            
+            return redirect(url_for('bots.edit_bot', slug=slug))
+            
+        except Exception as e:
+            logger.error(f"Erro ao atualizar bot: {e}")
+            flash('Erro ao atualizar bot. Tente novamente.', 'error')
+            db.session.rollback()
+    
+    return render_template('bots/edit.html', bot=bot)
+
+
+# Rota para iniciar bot

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from typing import Dict, List
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
@@ -246,13 +247,30 @@ class TelegramBotManager:
             await update.message.reply_text("Desculpe, ocorreu um erro. Tente novamente.")
     
     async def _handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler para botões inline (valores PIX)"""
+        """Handler para botões inline (valores PIX e verificação de pagamento)"""
         try:
             query = update.callback_query
             await query.answer()
             
+            callback_data = query.data
+            
+            # Verifica se é um callback de verificação de pagamento
+            if callback_data.startswith('check_'):
+                await self._handle_payment_verification(update, context)
+                return
+            
+            # Verifica se é um callback de teste de pagamento
+            if callback_data.startswith('test_payment_'):
+                await self._handle_test_payment(update, context)
+                return
+            
+            # Verifica se é callback para voltar ao início
+            if callback_data == 'start':
+                await self._handle_start_callback(update, context)
+                return
+            
             # Parse do callback data: "pix_19.90_1_0" (valor_bot_id_plan_index)
-            callback_parts = query.data.split('_')
+            callback_parts = callback_data.split('_')
             if len(callback_parts) < 3 or callback_parts[0] != 'pix':
                 await query.edit_message_text("Erro: Dados inválidos")
                 return
@@ -322,6 +340,7 @@ class TelegramBotManager:
             # Cria botões para o PIX
             keyboard = [
                 [InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"check_{payment.id}")],
+                [InlineKeyboardButton("🧪 TESTE - Simular Pagamento", callback_data=f"test_payment_{payment.id}")],
                 [InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -405,6 +424,286 @@ class TelegramBotManager:
             
         except Exception as e:
             logger.error(f"Erro no handler de texto: {e}")
+    
+    async def _handle_start_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handler para callback 'start' - volta ao menu inicial"""
+        try:
+            # Simula um comando /start
+            await self._handle_start(update, context)
+        except Exception as e:
+            logger.error(f"Erro no handler start callback: {e}")
+    
+    async def _handle_test_payment(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handler para simular pagamento aprovado (APENAS PARA TESTES)"""
+        try:
+            query = update.callback_query
+            user = update.effective_user
+            
+            # Extrai o ID do pagamento do callback data
+            payment_id = int(query.data.split('_')[2])
+            
+            # Busca o pagamento no banco
+            payment = Payment.query.get(payment_id)
+            if not payment:
+                await query.edit_message_text("❌ Pagamento não encontrado.")
+                return
+            
+            # Busca a configuração do bot
+            bot_config = TelegramBot.query.get(payment.bot_id)
+            if not bot_config:
+                await query.edit_message_text("❌ Configuração do bot não encontrada.")
+                return
+            
+            logger.info(f"🧪 TESTE: Simulando pagamento aprovado para @{user.username or user.id}")
+            
+            # Simula pagamento aprovado
+            payment.status = 'approved'
+            payment.paid_at = datetime.utcnow()
+            db.session.commit()
+            
+            logger.info(f"✅ TESTE: Pagamento simulado! Adicionando @{user.username or user.id} aos grupos")
+            
+            # Adiciona o usuário ao grupo VIP
+            success_vip = await self._add_user_to_group(
+                context.bot, 
+                user.id, 
+                bot_config.get_vip_group_id(),
+                "VIP"
+            )
+            
+            # Envia notificação para o grupo de logs
+            await self._send_log_notification(
+                context.bot,
+                bot_config.get_log_group_id(),
+                user,
+                payment.amount,
+                success_vip
+            )
+            
+            # Resposta ao usuário
+            if success_vip:
+                success_message = f"""🧪 **TESTE - PAGAMENTO SIMULADO!**
+
+✅ Pagamento foi simulado como aprovado.
+💰 Valor: R$ {payment.amount:.2f}
+👑 Você foi adicionado ao grupo VIP!
+
+🚀 Este é um teste - nenhum pagamento real foi processado."""
+            else:
+                success_message = f"""🧪 **TESTE - PAGAMENTO SIMULADO!**
+
+✅ Pagamento foi simulado como aprovado.
+💰 Valor: R$ {payment.amount:.2f}
+
+⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
+(Verifique se os IDs dos grupos estão configurados corretamente)"""
+            
+            # Botão para voltar ao início
+            keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                success_message,
+                reply_markup=reply_markup
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Erro no teste de pagamento: {e}")
+            await query.edit_message_text("❌ Erro ao simular pagamento. Tente novamente.")
+    
+    async def _handle_payment_verification(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handler para verificação de pagamento PIX"""
+        try:
+            query = update.callback_query
+            user = update.effective_user
+            
+            # Extrai o ID do pagamento do callback data
+            payment_id = int(query.data.split('_')[1])
+            
+            # Busca o pagamento no banco
+            payment = Payment.query.get(payment_id)
+            if not payment:
+                await query.edit_message_text("❌ Pagamento não encontrado.")
+                return
+            
+            # Busca a configuração do bot
+            bot_config = TelegramBot.query.get(payment.bot_id)
+            if not bot_config:
+                await query.edit_message_text("❌ Configuração do bot não encontrada.")
+                return
+            
+            # Busca o dono do bot
+            bot_owner = User.query.get(bot_config.user_id)
+            if not bot_owner or not bot_owner.pushinpay_token:
+                await query.edit_message_text("❌ Sistema de pagamento indisponível.")
+                return
+            
+            # Verifica o status do pagamento
+            logger.info(f"🔍 Verificando pagamento {payment_id} para @{user.username or user.id}")
+            
+            # Verifica com a API do PushinPay
+            try:
+                pushin_service = PushinPayService()
+                
+                # Usa o pix_code como payment_id para verificar o status
+                payment_status = pushin_service.check_payment_status(
+                    bot_owner.pushinpay_token, 
+                    payment.pix_code
+                )
+                payment_verified = payment_status.get('paid', False)
+                
+                logger.info(f"📊 Status do pagamento {payment.pix_code}: {payment_status}")
+                
+            except Exception as api_error:
+                logger.error(f"❌ Erro ao verificar pagamento via API: {api_error}")
+                # Em caso de erro na API, considera como não pago
+                payment_verified = False
+            
+            if payment_verified:
+                # Pagamento aprovado! 
+                payment.status = 'approved'
+                payment.paid_at = datetime.utcnow()
+                db.session.commit()
+                
+                logger.info(f"✅ Pagamento aprovado! Adicionando @{user.username or user.id} aos grupos")
+                
+                # Adiciona o usuário ao grupo VIP
+                success_vip = await self._add_user_to_group(
+                    context.bot, 
+                    user.id, 
+                    bot_config.get_vip_group_id(),
+                    "VIP"
+                )
+                
+                # Envia notificação para o grupo de logs
+                await self._send_log_notification(
+                    context.bot,
+                    bot_config.get_log_group_id(),
+                    user,
+                    payment.amount,
+                    success_vip
+                )
+                
+                # Resposta ao usuário
+                if success_vip:
+                    success_message = f"""✅ **PAGAMENTO APROVADO!**
+
+🎉 Parabéns! Seu pagamento foi confirmado.
+💰 Valor: R$ {payment.amount:.2f}
+👑 Você foi adicionado ao grupo VIP!
+
+Aproveite o acesso exclusivo! 🚀"""
+                else:
+                    success_message = f"""✅ **PAGAMENTO APROVADO!**
+
+🎉 Parabéns! Seu pagamento foi confirmado.
+💰 Valor: R$ {payment.amount:.2f}
+
+⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
+Entre em contato com o suporte."""
+                
+                # Botão para voltar ao início
+                keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(
+                    success_message,
+                    reply_markup=reply_markup
+                )
+                
+            else:
+                # Pagamento ainda pendente
+                keyboard = [
+                    [InlineKeyboardButton("🔄 Verificar Novamente", callback_data=f"check_{payment_id}")],
+                    [InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(
+                    "⏳ Pagamento ainda não foi identificado.\n\n"
+                    "Aguarde alguns minutos após realizar o pagamento e tente novamente.",
+                    reply_markup=reply_markup
+                )
+                
+        except Exception as e:
+            logger.error(f"❌ Erro na verificação de pagamento: {e}")
+            await query.edit_message_text("❌ Erro ao verificar pagamento. Tente novamente.")
+    
+    async def _add_user_to_group(self, bot, user_id: int, group_id: str, group_type: str) -> bool:
+        """Adiciona usuário a um grupo específico"""
+        try:
+            if not group_id:
+                logger.warning(f"⚠️  ID do grupo {group_type} não configurado")
+                return False
+            
+            logger.info(f"➕ Tentando adicionar usuário {user_id} ao grupo {group_type} ({group_id})")
+            
+            # Gera link de convite para o grupo
+            invite_link = await bot.create_chat_invite_link(
+                chat_id=group_id,
+                member_limit=1,  # Link para apenas 1 pessoa
+                expire_date=None  # Link temporário
+            )
+            
+            # Envia o link por mensagem privada
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"🎊 **ACESSO LIBERADO!**\n\n"
+                     f"👑 Clique no link abaixo para entrar no grupo VIP:\n\n"
+                     f"{invite_link.invite_link}\n\n"
+                     f"🚀 Aproveite o conteúdo exclusivo!"
+            )
+            
+            logger.info(f"✅ Link de convite enviado para usuário {user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao adicionar usuário {user_id} ao grupo {group_type}: {e}")
+            return False
+    
+    async def _send_log_notification(self, bot, log_group_id: str, user, amount: float, success: bool):
+        """Envia notificação para o grupo de logs"""
+        try:
+            if not log_group_id:
+                logger.warning("⚠️  ID do grupo de logs não configurado")
+                return
+            
+            # Monta a mensagem de log
+            status_emoji = "✅" if success else "❌"
+            status_text = "SUCESSO" if success else "ERRO"
+            
+            log_message = f"""🔔 **NOVO PAGAMENTO {status_text}**
+
+{status_emoji} **Status:** {'Aprovado e usuário adicionado' if success else 'Aprovado mas erro ao adicionar'}
+👤 **Usuário:** @{user.username or 'username_não_disponível'} (ID: {user.id})
+💰 **Valor:** R$ {amount:.2f}
+🕒 **Data:** {datetime.utcnow().strftime('%d/%m/%Y %H:%M:%S')}
+
+{"🎉 Usuário tem acesso ao grupo VIP!" if success else "⚠️  Verificar manualmente o acesso do usuário."}"""
+            
+            await bot.send_message(
+                chat_id=log_group_id,
+                text=log_message
+            )
+            
+            logger.info(f"📝 Notificação enviada para grupo de logs")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao enviar notificação para logs: {e}")
+            
+    
+    async def _get_user_info(self, bot, user_id: int) -> dict:
+        """Busca informações do usuário no Telegram"""
+        try:
+            user = await bot.get_chat_member(user_id, user_id)
+            return {
+                'username': user.user.username,
+                'first_name': user.user.first_name,
+                'last_name': user.user.last_name
+            }
+        except Exception as e:
+            logger.error(f"Erro ao buscar info do usuário {user_id}: {e}")
+            return {'username': None, 'first_name': 'Usuário', 'last_name': ''}
 
 # Instância global do gerenciador
 bot_manager = TelegramBotManager()

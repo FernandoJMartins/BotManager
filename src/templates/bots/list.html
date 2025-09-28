@@ -232,15 +232,14 @@ endblock %} {% block head %}
             {% if bot.is_active %}
             <div class="d-grid gap-2">
               <div class="btn-group" role="group">
-                <button
+                <a
+                  href="{{ url_for('bots.edit_bot', slug=bot.id) }}"
                   class="btn btn-outline-primary btn-sm"
                   data-bs-toggle="tooltip"
                   title="Editar Bot"
-                  data-action="edit"
-                  data-bot-id="{{ bot.id }}"
                 >
                   <i class="fas fa-edit"></i>
-                </button>
+                </a>
                 <button
                   class="btn btn-outline-danger btn-sm"
                   data-bs-toggle="tooltip"
@@ -346,9 +345,6 @@ endblock %} {% block head %}
     if (target.disabled) return;
 
     switch (action) {
-      case "edit":
-        editBot(botId);
-        break;
       case "delete":
         deleteBot(botId, botName, target);
         break;
@@ -359,10 +355,6 @@ endblock %} {% block head %}
         stopBot(botId, target);
         break;
     }
-  }
-
-  function editBot(botId) {
-    showNotification("Funcionalidade de edição em desenvolvimento", "info");
   }
 
   function deleteBot(botId, botName, buttonElement) {

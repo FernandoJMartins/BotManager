@@ -1,0 +1,605 @@
+{% extends "base.html" %} {% block title %}Editar Bot - {{ bot.bot_name }} -
+Telegram Bot Manager{% endblock %} {% block head %}
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  .page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+  }
+
+  .bot-edit-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    background: white;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    border-radius: 15px 15px 0 0;
+  }
+
+  .form-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #667eea;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+
+  .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .group-id-input {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.9rem;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .value-input-group {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Header da página -->
+<div class="page-header">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="mb-2">
+          <i class="fas fa-edit me-3"></i>
+          Editar Bot
+        </h1>
+        <p class="mb-0 opacity-75">
+          <i class="fas fa-robot me-2"></i>{{ bot.bot_name }}
+          <span class="badge bg-light text-dark ms-2 px-3 py-2">
+            ID: {{ bot.id }}
+          </span>
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('bots.list_bots') }}" class="btn btn-light">
+          <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card bot-edit-card animate-fade-in">
+    <div class="card-body p-4">
+      <form method="POST" enctype="multipart/form-data">
+        <!-- Seção: Informações Básicas -->
+        <div class="form-section">
+          <div class="section-header">
+            <h5 class="mb-0">
+              <i class="fas fa-info-circle me-2"></i>
+              Informações Básicas
+            </h5>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label fw-bold">
+                  <i class="fas fa-tag me-1"></i>Nome do Bot
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  name="name"
+                  value="{{ bot.bot_name }}"
+                  required
+                  autofocus
+                  maxlength="100"
+                  placeholder="Ex: Meu Bot de Vendas"
+                />
+                <small class="form-text text-muted">
+                  Nome para identificar seu bot no dashboard
+                </small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="token" class="form-label fw-bold">
+                  <i class="fas fa-key me-1"></i>Token do Bot
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="token"
+                  name="token"
+                  value="{{ bot.bot_token }}"
+                  required
+                  placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+                />
+                <small class="form-text text-muted">
+                  Token obtido do @BotFather no Telegram (⚠️ Alterar reiniciará
+                  o bot)
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="welcome_message" class="form-label fw-bold">
+              <i class="fas fa-comment me-1"></i>Mensagem de Boas-vindas
+            </label>
+            <textarea
+              class="form-control"
+              id="welcome_message"
+              name="welcome_message"
+              rows="3"
+              placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
+            >
+{{ bot.welcome_message or '' }}</textarea
+            >
+            <small class="form-text text-muted">
+              Mensagem que será enviada quando alguém digitar /start
+            </small>
+          </div>
+        </div>
+
+        <!-- Seção: Mídia de Boas-vindas -->
+        <div class="form-section">
+          <div class="section-header">
+            <h5 class="mb-0">
+              <i class="fas fa-photo-video me-2"></i>
+              Mídia de Boas-vindas
+            </h5>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="welcome_image" class="form-label fw-bold">
+                  <i class="fas fa-image me-1"></i>Imagem de Boas-vindas
+                </label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="welcome_image"
+                  name="welcome_image"
+                  accept="image/*"
+                />
+                {% if bot.welcome_image %}
+                <small class="form-text text-success">
+                  ✅ Imagem atual: {{ bot.welcome_image.split('/')[-1] }}
+                </small>
+                {% else %}
+                <small class="form-text text-muted">
+                  Nenhuma imagem configurada
+                </small>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="welcome_audio" class="form-label fw-bold">
+                  <i class="fas fa-volume-up me-1"></i>Áudio de Boas-vindas
+                </label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="welcome_audio"
+                  name="welcome_audio"
+                  accept="audio/*"
+                />
+                {% if bot.welcome_audio %}
+                <small class="form-text text-success">
+                  ✅ Áudio atual: {{ bot.welcome_audio.split('/')[-1] }}
+                </small>
+                {% else %}
+                <small class="form-text text-muted">
+                  Nenhum áudio configurado
+                </small>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção: Planos e Valores PIX -->
+        <div class="form-section">
+          <div class="section-header">
+            <h5 class="mb-0">
+              <i class="fas fa-money-bill-wave me-2"></i>
+              Planos e Valores PIX
+            </h5>
+          </div>
+
+          <div id="plans-container">
+            {% set current_values = bot.get_pix_values() %} 
+            {% set current_names = bot.get_plan_names() %} 
+            
+            {# Mostra apenas os valores/nomes que realmente existem #}
+            {% set max_items = [current_values|length, current_names|length, 1]|max %}
+            
+            {% for i in range(max_items) %}
+            <div class="value-input-group">
+              <div class="row align-items-center">
+                <div class="col-md-5">
+                  <label class="form-label fw-bold">
+                    <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    name="pix_values[]"
+                    value="{{ current_values[i] if i < current_values|length else '' }}"
+                    placeholder="19.90"
+                    step="0.01"
+                    min="0.01"
+                  />
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold">
+                    <i class="fas fa-tag me-1"></i>Nome do Plano
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="plan_names[]"
+                    value="{{ current_names[i] if i < current_names|length else '' }}"
+                    placeholder="Plano Premium"
+                    maxlength="50"
+                  />
+                </div>
+                <div class="col-md-2">
+                  {% if max_items > 1 %}
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm w-100"
+                    onclick="removePlan(this)"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+            
+            {# Se não há nenhum valor, mostra pelo menos um campo vazio #}
+            {% if max_items == 0 %}
+            <div class="value-input-group">
+              <div class="row align-items-center">
+                <div class="col-md-5">
+                  <label class="form-label fw-bold">
+                    <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    name="pix_values[]"
+                    placeholder="19.90"
+                    step="0.01"
+                    min="0.01"
+                  />
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold">
+                    <i class="fas fa-tag me-1"></i>Nome do Plano
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="plan_names[]"
+                    placeholder="Plano Premium"
+                    maxlength="50"
+                  />
+                </div>
+                <div class="col-md-2"></div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mt-3">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              onclick="addPlan()"
+            >
+              <i class="fas fa-plus me-2"></i>Adicionar Plano
+            </button>
+          </div>
+        </div>
+
+        <!-- Seção: Configurações de Grupos -->
+        <div class="form-section">
+          <div class="section-header">
+            <h5 class="mb-0">
+              <i class="fas fa-users me-2"></i>
+              Configurações de Grupos
+            </h5>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="id_vip" class="form-label fw-bold">
+                  <i class="fas fa-crown me-1"></i>ID do Grupo VIP
+                </label>
+                <input
+                  type="text"
+                  class="form-control group-id-input"
+                  id="id_vip"
+                  name="id_vip"
+                  value="{{ bot.id_vip or '' }}"
+                  placeholder="-1001234567890"
+                />
+                <small class="form-text text-muted">
+                  Grupo onde os clientes serão adicionados após pagamento
+                  aprovado
+                </small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="id_logs" class="form-label fw-bold">
+                  <i class="fas fa-clipboard-list me-1"></i>ID do Grupo de Logs
+                </label>
+                <input
+                  type="text"
+                  class="form-control group-id-input"
+                  id="id_logs"
+                  name="id_logs"
+                  value="{{ bot.id_logs or '' }}"
+                  placeholder="-1001234567890"
+                />
+                <small class="form-text text-muted">
+                  Grupo onde serão enviadas notificações de pagamentos
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h6>
+              <i class="fas fa-lightbulb me-2"></i>Como obter o ID do grupo:
+            </h6>
+            <ol class="mb-0 small">
+              <li>Adicione o bot @userinfobot ao seu grupo</li>
+              <li>Digite <code>/start</code> no grupo</li>
+              <li>O bot retornará o ID do grupo (ex: -1001234567890)</li>
+              <li>Remova o @userinfobot do grupo</li>
+              <li>Adicione seu bot ao grupo e torne-o administrador</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Status do Bot -->
+        <div class="info-card mb-4">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <h6><i class="fas fa-info-circle me-2"></i>Status do Bot</h6>
+              <p class="mb-0">
+                <span
+                  class="badge bg-{{ 'success' if bot.is_running else 'secondary' }} me-2"
+                >
+                  {{ 'Online' if bot.is_running else 'Offline' }}
+                </span>
+                {% if bot.is_fully_configured() %}
+                <span class="badge bg-success">Totalmente Configurado</span>
+                {% else %}
+                <span class="badge bg-warning">Configuração Incompleta</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="col-md-4 text-end">
+              <small class="text-muted">
+                Criado em: {{ bot.created_at.strftime('%d/%m/%Y') if
+                bot.created_at else 'N/A' }}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <a
+            href="{{ url_for('bots.list_bots') }}"
+            class="btn btn-secondary me-md-2"
+          >
+            <i class="fas fa-times me-2"></i>Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save me-2"></i>Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Conta o número atual de planos carregados
+  let planCount = document.querySelectorAll('.value-input-group').length;
+
+  function addPlan() {
+    if (planCount >= 10) {
+      alert("Máximo de 10 planos permitidos");
+      return;
+    }
+
+    const container = document.getElementById("plans-container");
+    const newPlan = document.createElement("div");
+    newPlan.className = "value-input-group";
+
+    newPlan.innerHTML = `
+    <div class="row align-items-center">
+      <div class="col-md-5">
+        <label class="form-label fw-bold">
+          <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
+        </label>
+        <input
+          type="number"
+          class="form-control"
+          name="pix_values[]"
+          placeholder="19.90"
+          step="0.01"
+          min="0.01"
+        />
+      </div>
+      <div class="col-md-5">
+        <label class="form-label fw-bold">
+          <i class="fas fa-tag me-1"></i>Nome do Plano
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          name="plan_names[]"
+          placeholder="Plano Premium"
+          maxlength="50"
+        />
+      </div>
+      <div class="col-md-2">
+        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePlan(this)">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+    container.appendChild(newPlan);
+    planCount++;
+    updateRemoveButtons();
+  }
+
+  function removePlan(button) {
+    const container = document.getElementById("plans-container");
+    const plans = container.querySelectorAll('.value-input-group');
+    
+    // Não permite remover se há apenas um plano
+    if (plans.length <= 1) {
+      alert("Deve haver pelo menos um plano configurado!");
+      return;
+    }
+
+    const planGroup = button.closest(".value-input-group");
+    planGroup.remove();
+    planCount--;
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons() {
+    const container = document.getElementById("plans-container");
+    const plans = container.querySelectorAll('.value-input-group');
+    const removeButtons = container.querySelectorAll('.btn-outline-danger');
+    
+    // Mostra/esconde botões de remover baseado no número de planos
+    removeButtons.forEach(button => {
+      button.style.display = plans.length > 1 ? 'block' : 'none';
+    });
+  }
+
+  // Inicializa os botões de remover quando a página carrega
+  document.addEventListener('DOMContentLoaded', function() {
+    updateRemoveButtons();
+  });
+
+  // Validação do formulário
+  document.querySelector("form").addEventListener("submit", function (e) {
+    const pixInputs = document.querySelectorAll('input[name="pix_values[]"]');
+    const hasValue = Array.from(pixInputs).some(
+      (input) => input.value && parseFloat(input.value) > 0
+    );
+
+    if (!hasValue) {
+      e.preventDefault();
+      alert("Configure pelo menos um valor PIX para o seu bot!");
+      return;
+    }
+
+    // Verificar token
+    const token = document.getElementById("token").value;
+    const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
+
+    if (!tokenPattern.test(token)) {
+      e.preventDefault();
+      alert(
+        "Token do bot inválido! Verifique se copiou corretamente do @BotFather."
+      );
+      return;
+    }
+  });
+
+  // Auto-formatação dos IDs de grupo
+  function formatGroupId(input) {
+    let value = input.value.replace(/[^\d-]/g, "");
+    if (value && !value.startsWith("-")) {
+      value = "-" + value;
+    }
+    input.value = value;
+  }
+
+  document.getElementById("id_vip").addEventListener("input", function () {
+    formatGroupId(this);
+  });
+
+  document.getElementById("id_logs").addEventListener("input", function () {
+    formatGroupId(this);
+  });
+</script>
+{% endblock %}
