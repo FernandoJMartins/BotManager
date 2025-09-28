@@ -275,12 +275,12 @@ endblock %} {% block head %}
             </div>
             {% else %}
             <div class="d-grid">
-              <a
-                href="{{ url_for('bots.payment_status', bot_id=bot.id) }}"
+              <button
                 class="btn btn-warning"
+                onclick="alert('Bot inativo. Configure o bot primeiro.')"
               >
-                <i class="fas fa-credit-card me-2"></i>Pagar via PIX
-              </a>
+                <i class="fas fa-exclamation-triangle me-2"></i>Bot Inativo
+              </button>
             </div>
             {% endif %}
           </div>

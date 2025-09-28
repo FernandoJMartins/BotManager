@@ -103,19 +103,8 @@ Telegram Bot Manager{% endblock %} {% block head %}
       <div>
         <h1 class="mb-2">
           <i class="fas fa-edit me-3"></i>
-          Editar Bot
+          Bot : {{bot.bot_username}} - ID: {{bot.id}}
         </h1>
-        <p class="mb-0 opacity-75">
-          <i class="fas fa-robot me-2"></i>{{ bot.bot_name }}
-          <span class="badge bg-light text-dark ms-2 px-3 py-2">
-            ID: {{ bot.id }}
-          </span>
-        </p>
-      </div>
-      <div class="d-flex gap-2">
-        <a href="{{ url_for('bots.list_bots') }}" class="btn btn-light">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
-        </a>
       </div>
     </div>
   </div>
@@ -127,56 +116,45 @@ Telegram Bot Manager{% endblock %} {% block head %}
       <form method="POST" enctype="multipart/form-data">
         <!-- Seção: Informações Básicas -->
         <div class="form-section">
-          <div class="section-header">
-            <h5 class="mb-0">
-              <i class="fas fa-info-circle me-2"></i>
-              Informações Básicas
-            </h5>
+          <!-- Nome do Bot - Largura Total -->
+          <div class="mb-3">
+            <label for="name" class="form-label fw-bold">
+              <i class="fas fa-tag me-1"></i>Nome do Bot
+            </label>
+            <input
+              type="text"
+              class="form-control w-100"
+              id="name"
+              name="name"
+              value="{{ bot.bot_name }}"
+              required
+              autofocus
+              maxlength="100"
+              placeholder="Ex: Meu Bot de Vendas"
+            />
+            <small class="form-text text-muted">
+              Nome para identificar seu bot no dashboard
+            </small>
           </div>
 
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="name" class="form-label fw-bold">
-                  <i class="fas fa-tag me-1"></i>Nome do Bot
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="name"
-                  name="name"
-                  value="{{ bot.bot_name }}"
-                  required
-                  autofocus
-                  maxlength="100"
-                  placeholder="Ex: Meu Bot de Vendas"
-                />
-                <small class="form-text text-muted">
-                  Nome para identificar seu bot no dashboard
-                </small>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="token" class="form-label fw-bold">
-                  <i class="fas fa-key me-1"></i>Token do Bot
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="token"
-                  name="token"
-                  value="{{ bot.bot_token }}"
-                  required
-                  placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
-                />
-                <small class="form-text text-muted">
-                  Token obtido do @BotFather no Telegram (⚠️ Alterar reiniciará
-                  o bot)
-                </small>
-              </div>
-            </div>
+          <!-- Token do Bot -->
+          <div class="mb-3">
+            <label for="token" class="form-label fw-bold">
+              <i class="fas fa-key me-1"></i>Token do Bot
+            </label>
+            <input
+              type="text"
+              class="form-control w-100"
+              id="token"
+              name="token"
+              value="{{ bot.bot_token }}"
+              required
+              placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+            />
+            <small class="form-text text-muted">
+              Token obtido do @BotFather no Telegram (⚠️ Alterar reiniciará o
+              bot)
+            </small>
           </div>
 
           <div class="mb-3">
@@ -187,7 +165,13 @@ Telegram Bot Manager{% endblock %} {% block head %}
               class="form-control"
               id="welcome_message"
               name="welcome_message"
-              rows="3"
+              rows="8"
+              style="
+                min-height: 100px;
+                font-size: 14px;
+                line-height: 1.4;
+                padding: 8px 12px;
+              "
               placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
             >
 {{ bot.welcome_message or '' }}</textarea
@@ -200,13 +184,6 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
         <!-- Seção: Mídia de Boas-vindas -->
         <div class="form-section">
-          <div class="section-header">
-            <h5 class="mb-0">
-              <i class="fas fa-photo-video me-2"></i>
-              Mídia de Boas-vindas
-            </h5>
-          </div>
-
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
@@ -236,6 +213,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
               <div class="mb-3">
                 <label for="welcome_audio" class="form-label fw-bold">
                   <i class="fas fa-volume-up me-1"></i>Áudio de Boas-vindas
+                  (Opcional)
                 </label>
                 <input
                   type="file"
@@ -263,8 +241,25 @@ Telegram Bot Manager{% endblock %} {% block head %}
           <div class="section-header">
             <h5 class="mb-0">
               <i class="fas fa-money-bill-wave me-2"></i>
-              Planos e Valores PIX
+              Planos
             </h5>
+          </div>
+
+          <!-- Cabeçalho dos campos (apenas uma vez) -->
+          <div class="row mb-3">
+            <div class="col-md-5">
+              <label class="form-label fw-bold">
+                <i class="fas fa-tag me-1"></i>Nome do Plano
+              </label>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label fw-bold">
+                <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
+              </label>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label fw-bold">Ações</label>
+            </div>
           </div>
 
           <div id="plans-container">
@@ -275,23 +270,6 @@ Telegram Bot Manager{% endblock %} {% block head %}
             <div class="value-input-group">
               <div class="row align-items-center">
                 <div class="col-md-5">
-                  <label class="form-label fw-bold">
-                    <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
-                  </label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    name="pix_values[]"
-                    value="{{ current_values[i] if i < current_values|length else '' }}"
-                    placeholder="19.90"
-                    step="0.01"
-                    min="0.01"
-                  />
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label fw-bold">
-                    <i class="fas fa-tag me-1"></i>Nome do Plano
-                  </label>
                   <input
                     type="text"
                     class="form-control"
@@ -299,6 +277,17 @@ Telegram Bot Manager{% endblock %} {% block head %}
                     value="{{ current_names[i] if i < current_names|length else '' }}"
                     placeholder="Plano Premium"
                     maxlength="50"
+                  />
+                </div>
+                <div class="col-md-5">
+                  <input
+                    type="number"
+                    class="form-control"
+                    name="pix_values[]"
+                    value="{{ current_values[i] if i < current_values|length else '' }}"
+                    placeholder="19.90"
+                    step="1.00"
+                    min="1"
                   />
                 </div>
                 <div class="col-md-2">
@@ -319,9 +308,15 @@ Telegram Bot Manager{% endblock %} {% block head %}
             <div class="value-input-group">
               <div class="row align-items-center">
                 <div class="col-md-5">
-                  <label class="form-label fw-bold">
-                    <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
-                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="plan_names[]"
+                    placeholder="Plano Premium"
+                    maxlength="50"
+                  />
+                </div>
+                <div class="col-md-5">
                   <input
                     type="number"
                     class="form-control"
@@ -329,18 +324,6 @@ Telegram Bot Manager{% endblock %} {% block head %}
                     placeholder="19.90"
                     step="0.01"
                     min="0.01"
-                  />
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label fw-bold">
-                    <i class="fas fa-tag me-1"></i>Nome do Plano
-                  </label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="plan_names[]"
-                    placeholder="Plano Premium"
-                    maxlength="50"
                   />
                 </div>
                 <div class="col-md-2"></div>
@@ -393,7 +376,8 @@ Telegram Bot Manager{% endblock %} {% block head %}
             <div class="col-md-6">
               <div class="mb-3">
                 <label for="id_logs" class="form-label fw-bold">
-                  <i class="fas fa-clipboard-list me-1"></i>ID do Grupo de Logs
+                  <i class="fas fa-clipboard-list me-1"></i>ID do Grupo de
+                  Notificações
                 </label>
                 <input
                   type="text"
@@ -485,28 +469,22 @@ Telegram Bot Manager{% endblock %} {% block head %}
     newPlan.innerHTML = `
     <div class="row align-items-center">
       <div class="col-md-5">
-        <label class="form-label fw-bold">
-          <i class="fas fa-dollar-sign me-1"></i>Valor (R$)
-        </label>
-        <input
-          type="number"
-          class="form-control"
-          name="pix_values[]"
-          placeholder="19.90"
-          step="0.01"
-          min="0.01"
-        />
-      </div>
-      <div class="col-md-5">
-        <label class="form-label fw-bold">
-          <i class="fas fa-tag me-1"></i>Nome do Plano
-        </label>
         <input
           type="text"
           class="form-control"
           name="plan_names[]"
           placeholder="Plano Premium"
           maxlength="50"
+        />
+      </div>
+      <div class="col-md-5">
+        <input
+          type="number"
+          class="form-control"
+          name="pix_values[]"
+          placeholder="19.90"
+          step="1.00"
+          min="1"
         />
       </div>
       <div class="col-md-2">
