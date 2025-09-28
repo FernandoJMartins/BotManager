@@ -21,75 +21,89 @@ class TelegramBotManager:
     
     async def start_bot(self, bot_config: TelegramBot) -> bool:
         """Inicia um bot Telegram individual"""
-        try:
-            if bot_config.bot_token in self.active_bots:
-                logger.info(f"Bot {bot_config.bot_username} já está rodando")
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                if bot_config.bot_token in self.active_bots:
+                    logger.info(f"Bot {bot_config.bot_username} já está rodando")
+                    return True
+                
+                logger.info(f"Tentativa {attempt + 1}/{max_retries} de iniciar bot {bot_config.bot_username}")
+                
+                # Cria aplicação do bot com configurações de conexão mais robustas
+                application = Application.builder().token(bot_config.bot_token).build()
+                
+                # Adiciona handlers
+                application.add_handler(CommandHandler("start", self._handle_start))
+                application.add_handler(CallbackQueryHandler(self._handle_callback))
+                
+                # Handler para QUALQUER mensagem (teste)
+                application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_any_text))
+                
+                # Armazena configuração do bot no contexto da aplicação
+                application.bot_data['config'] = bot_config
+                
+                # Inicia o bot
+                await application.initialize()
+                await application.start()
+                
+                # Teste de conectividade antes do polling
+                try:
+                    me = await application.bot.get_me()
+                    logger.info(f"✅ Bot conectado: @{me.username} - {me.first_name}")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao conectar bot: {e}")
+                    if attempt == max_retries - 1:
+                        return False
+                    continue
+                
+                # Inicia polling em modo não-bloqueante
+                logger.info("🔄 Iniciando polling...")
+                print("🔄 Iniciando polling...")
+                
+                # Testa se consegue receber updates primeiro
+                try:
+                    updates = await application.bot.get_updates(limit=1, timeout=1)
+                    logger.info(f"✅ Teste de updates: {len(updates)} mensagens pendentes")
+                    print(f"✅ Teste de updates: {len(updates)} mensagens pendentes")
+                except Exception as update_error:
+                    logger.error(f"❌ Erro ao testar updates: {update_error}")
+                    print(f"❌ Erro ao testar updates: {update_error}")
+                
+                await application.updater.start_polling(
+                    poll_interval=1.0,
+                    timeout=20,
+                    bootstrap_retries=3,
+                    read_timeout=30,
+                    write_timeout=30,
+                    connect_timeout=30,
+                    drop_pending_updates=False  # Mudança: não descartar mensagens pendentes
+                )
+                
+                logger.info(f"🔄 Polling iniciado para bot {bot_config.bot_username}")
+                logger.info(f"🎯 Bot está aguardando mensagens. Teste enviando /start para @{me.username}")
+                
+                # Armazena na lista de bots ativos
+                self.active_bots[bot_config.bot_token] = application
+                
+                # Atualiza status no banco
+                bot_config.is_running = True
+                db.session.commit()
+                
+                logger.info(f"Bot {bot_config.bot_username} iniciado com sucesso")
                 return True
-            
-            # Cria aplicação do bot
-            application = Application.builder().token(bot_config.bot_token).build()
-            
-            # Adiciona handlers
-            application.add_handler(CommandHandler("start", self._handle_start))
-            application.add_handler(CallbackQueryHandler(self._handle_callback))
-            
-            # Handler para QUALQUER mensagem (teste)
-            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_any_text))
-            
-            # Armazena configuração do bot no contexto da aplicação
-            application.bot_data['config'] = bot_config
-            
-            # Inicia o bot
-            await application.initialize()
-            await application.start()
-            
-            # Teste de conectividade antes do polling
-            try:
-                me = await application.bot.get_me()
-                logger.info(f"✅ Bot conectado: @{me.username} - {me.first_name}")
+                
             except Exception as e:
-                logger.error(f"❌ Erro ao conectar bot: {e}")
-                return False
-            
-            # Inicia polling em modo não-bloqueante
-            logger.info("🔄 Iniciando polling...")
-            print("🔄 Iniciando polling...")
-            
-            # Testa se consegue receber updates primeiro
-            try:
-                updates = await application.bot.get_updates(limit=1, timeout=1)
-                logger.info(f"✅ Teste de updates: {len(updates)} mensagens pendentes")
-                print(f"✅ Teste de updates: {len(updates)} mensagens pendentes")
-            except Exception as update_error:
-                logger.error(f"❌ Erro ao testar updates: {update_error}")
-                print(f"❌ Erro ao testar updates: {update_error}")
-            
-            await application.updater.start_polling(
-                poll_interval=1.0,
-                timeout=20,
-                bootstrap_retries=3,
-                read_timeout=30,
-                write_timeout=30,
-                connect_timeout=30,
-                drop_pending_updates=False  # Mudança: não descartar mensagens pendentes
-            )
-            
-            logger.info(f"🔄 Polling iniciado para bot {bot_config.bot_username}")
-            logger.info(f"🎯 Bot está aguardando mensagens. Teste enviando /start para @{me.username}")
-            
-            # Armazena na lista de bots ativos
-            self.active_bots[bot_config.bot_token] = application
-            
-            # Atualiza status no banco
-            bot_config.is_running = True
-            db.session.commit()
-            
-            logger.info(f"Bot {bot_config.bot_username} iniciado com sucesso")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Erro ao iniciar bot {bot_config.bot_username}: {e}")
-            return False
+                logger.error(f"Tentativa {attempt + 1} falhou para bot {bot_config.bot_username}: {e}")
+                
+                if attempt < max_retries - 1:
+                    logger.info(f"Aguardando {retry_delay}s antes da próxima tentativa...")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logger.error(f"Todas as tentativas falharam para bot {bot_config.bot_username}")
+                    return False
     
     async def stop_bot(self, bot_token: str) -> bool:
         """Para um bot Telegram específico"""
@@ -267,6 +281,9 @@ class TelegramBotManager:
             
             # Busca o dono do bot para pegar o token PushinPay
             bot_owner = User.query.get(bot_config.user_id)
+
+            logger.info(f"TOKEN PUSHIN: {bot_owner.pushinpay_token}")
+
             if not bot_owner or not bot_owner.pushinpay_token:
                 await query.edit_message_text("Erro: Sistema de pagamento indisponível")
                 return
@@ -319,14 +336,13 @@ class TelegramBotManager:
 
 {pix_data.get('pix_copy_paste', 'PIX não disponível')}
 
-� Toque na chave PIX acima para copiá-la
+👆 Toque na chave PIX acima para copiá-la
 
 ‼️ Após o pagamento, clique no botão abaixo para verificar o status:"""
             
             await query.edit_message_text(
                 pix_message,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
+                reply_markup=reply_markup
             )
             
             logger.info(f"PIX R$ {value:.2f} gerado para @{user.username if user.username else user.id} no bot {bot_config.bot_username}")
@@ -340,7 +356,7 @@ class TelegramBotManager:
         try:
             user = update.effective_user
             message_text = update.message.text
-            logger.info(f"� Mensagem recebida de @{user.username or user.id}: {message_text}")
+            logger.info(f"Mensagem recebida de @{user.username or user.id}: {message_text}")
             
             await update.message.reply_text(f"Recebi sua mensagem: {message_text}")
             

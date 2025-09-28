@@ -38,7 +38,7 @@ class PushinPayService:
         
         # Headers para a API
         headers = {
-            'Authorization': f' {user_pushinpay_token}',
+            'Authorization': f'{user_pushinpay_token}',
             'Content-Type': 'application/json'
         }
         
@@ -60,22 +60,23 @@ class PushinPayService:
         }
         
         try:
-            print(f"Tentando criar PIX - URL: {self.api_base_url}/pix/cashIn")
-            print(f"Headers: {headers}")
-            print(f"Payload: {payload}")
+            # Importa o logger para usar nos logs
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f"🔄 Tentando criar PIX - URL: {self.api_base_url}/pix/cashIn")
+            logger.info(f"📋 Headers: {headers}")
+            logger.info(f"📦 Payload: {payload}")
             
             # Tenta diferentes endpoints possíveis
             endpoints_to_try = [
                 f"{self.api_base_url}/pix/cashIn",
-                f"{self.api_base_url}/pix/charge",  
-                f"{self.api_base_url}/pix",
-                f"{self.api_base_url}/charges/pix"
             ]
             
             response = None
             for endpoint in endpoints_to_try:
                 try:
-                    print(f"Tentando endpoint: {endpoint}")
+                    logger.info(f"🌐 Tentando endpoint: {endpoint}")
                     response = requests.post(
                         endpoint,
                         json=payload,
@@ -83,23 +84,23 @@ class PushinPayService:
                         timeout=30
                     )
                     
-                    print(f"Endpoint {endpoint} - Status: {response.status_code}")
+                    logger.info(f"📊 Endpoint {endpoint} - Status: {response.status_code}")
                     
                     # Se não foi erro 404, usa essa resposta
                     if response.status_code != 404:
                         break
                         
                 except Exception as e:
-                    print(f"Erro no endpoint {endpoint}: {e}")
+                    logger.error(f"❌ Erro no endpoint {endpoint}: {e}")
                     continue
             
             if not response:
                 raise Exception("Nenhum endpoint respondeu")
             
             # Log da resposta para debug
-            print(f"PushinPay Response Status: {response.status_code}")
-            print(f"PushinPay Response Headers: {response.headers}")
-            print(f"PushinPay Response Text: {response.text}")
+            logger.info(f"📥 PushinPay Response Status: {response.status_code}")
+            logger.info(f"📋 PushinPay Response Headers: {response.headers}")
+            logger.info(f"📄 PushinPay Response Text: {response.text}")
             
             if response.status_code == 200 or response.status_code == 201:
                 try:
@@ -132,24 +133,24 @@ class PushinPayService:
                     error_data = response.json()
                     if 'message' in error_data:
                         error_msg += f' - {error_data["message"]}'
-                    print(f"Erro detalhado da API: {error_data}")
+                    logger.error(f"💥 Erro detalhado da API: {error_data}")
                 except:
-                    print(f"Resposta de erro não é JSON: {response.text}")
+                    logger.error(f"📄 Resposta de erro não é JSON: {response.text}")
                 
                 # Para desenvolvimento, usa PIX simulado em caso de erro
-                print(f"API falhou com {response.status_code}, usando PIX simulado")
+                logger.warning(f"⚠️ API falhou com {response.status_code}, usando PIX simulado")
                 return self._create_mock_pix_payment(amount, description)
                 
         except requests.exceptions.RequestException as e:
-            print(f"Erro de conexão com PushinPay: {str(e)}")
+            logger.error(f"🌐 Erro de conexão com PushinPay: {str(e)}")
             # Retorna PIX simulado para desenvolvimento
-            print("Usando PIX simulado devido a erro de conexão")
+            logger.warning("🔄 Usando PIX simulado devido a erro de conexão")
             return self._create_mock_pix_payment(amount, description)
             
         except Exception as e:
-            print(f"Erro inesperado: {str(e)}")
+            logger.error(f"💥 Erro inesperado: {str(e)}")
             # Retorna PIX simulado para desenvolvimento  
-            print("Usando PIX simulado devido a erro inesperado")
+            logger.warning("🔄 Usando PIX simulado devido a erro inesperado")
             return self._create_mock_pix_payment(amount, description)
     
     def _create_mock_pix_payment(self, amount: float, description: str) -> dict:
