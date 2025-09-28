@@ -268,13 +268,10 @@ Telegram Bot Manager{% endblock %} {% block head %}
           </div>
 
           <div id="plans-container">
-            {% set current_values = bot.get_pix_values() %} 
-            {% set current_names = bot.get_plan_names() %} 
-            
-            {# Mostra apenas os valores/nomes que realmente existem #}
-            {% set max_items = [current_values|length, current_names|length, 1]|max %}
-            
-            {% for i in range(max_items) %}
+            {% set current_values = bot.get_pix_values() %} {% set current_names
+            = bot.get_plan_names() %} {# Mostra apenas os valores/nomes que
+            realmente existem #} {% set max_items = [current_values|length,
+            current_names|length, 1]|max %} {% for i in range(max_items) %}
             <div class="value-input-group">
               <div class="row align-items-center">
                 <div class="col-md-5">
@@ -317,10 +314,8 @@ Telegram Bot Manager{% endblock %} {% block head %}
                 </div>
               </div>
             </div>
-            {% endfor %}
-            
-            {# Se não há nenhum valor, mostra pelo menos um campo vazio #}
-            {% if max_items == 0 %}
+            {% endfor %} {# Se não há nenhum valor, mostra pelo menos um campo
+            vazio #} {% if max_items == 0 %}
             <div class="value-input-group">
               <div class="row align-items-center">
                 <div class="col-md-5">
@@ -475,7 +470,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
 <script>
   // Conta o número atual de planos carregados
-  let planCount = document.querySelectorAll('.value-input-group').length;
+  let planCount = document.querySelectorAll(".value-input-group").length;
 
   function addPlan() {
     if (planCount >= 10) {
@@ -529,8 +524,8 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
   function removePlan(button) {
     const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll('.value-input-group');
-    
+    const plans = container.querySelectorAll(".value-input-group");
+
     // Não permite remover se há apenas um plano
     if (plans.length <= 1) {
       alert("Deve haver pelo menos um plano configurado!");
@@ -545,17 +540,17 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
   function updateRemoveButtons() {
     const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll('.value-input-group');
-    const removeButtons = container.querySelectorAll('.btn-outline-danger');
-    
+    const plans = container.querySelectorAll(".value-input-group");
+    const removeButtons = container.querySelectorAll(".btn-outline-danger");
+
     // Mostra/esconde botões de remover baseado no número de planos
-    removeButtons.forEach(button => {
-      button.style.display = plans.length > 1 ? 'block' : 'none';
+    removeButtons.forEach((button) => {
+      button.style.display = plans.length > 1 ? "block" : "none";
     });
   }
 
   // Inicializa os botões de remover quando a página carrega
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
     updateRemoveButtons();
   });
 

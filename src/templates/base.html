@@ -99,7 +99,8 @@
 
       .nav-link {
         color: rgba(255, 255, 255, 0.85) !important;
-        transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        transition: transform 0.2s ease, background-color 0.2s ease,
+          color 0.2s ease;
         border-radius: 12px !important;
         margin-bottom: 0.5rem;
         padding: 0.875rem 1rem !important;
@@ -700,7 +701,7 @@
 
         // Animação de entrada dos cards otimizada
         const cards = document.querySelectorAll(".card");
-        
+
         // Usar requestAnimationFrame para melhor performance
         requestAnimationFrame(() => {
           cards.forEach((card, index) => {
@@ -708,14 +709,18 @@
             if (index < 6) {
               card.style.animationDelay = `${index * 0.05}s`;
               card.classList.add("animate-fade-in");
-              
+
               // Remover will-change após animação
-              card.addEventListener('animationend', function() {
-                this.classList.add('animation-complete');
-              }, { once: true });
+              card.addEventListener(
+                "animationend",
+                function () {
+                  this.classList.add("animation-complete");
+                },
+                { once: true }
+              );
             } else {
               // Cards extras aparecem sem animação
-              card.style.opacity = '1';
+              card.style.opacity = "1";
             }
           });
         });
