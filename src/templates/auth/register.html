@@ -1,92 +1,183 @@
 {% extends "base.html" %} {% block title %}Registro - Telegram Bot Manager{%
 endblock %} {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-6 col-lg-4">
-    <div class="card">
-      <div class="card-header text-center">
-        <h4 class="mb-0">
-          <i class="fas fa-user-plus me-2"></i>
-          Criar Conta
-        </h4>
+  <div class="col-md-6 col-lg-5">
+    <!-- Card principal de registro -->
+    <div
+      class="card shadow-lg border-0"
+      style="border-radius: 16px; overflow: hidden"
+    >
+      <!-- Header com gradiente -->
+      <div
+        class="card-header text-center text-white"
+        style="
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          padding: 2rem 1.5rem;
+        "
+      >
+        <div style="margin-bottom: 1rem">
+          <i class="fas fa-rocket" style="font-size: 3rem; color: #fbbf24"></i>
+        </div>
+        <h4 class="mb-0 fw-bold">Comece Agora!</h4>
+        <p class="mb-0 opacity-75">Crie sua conta e gerencie até 30 bots</p>
       </div>
-      <div class="card-body">
+
+      <div class="card-body" style="padding: 2rem">
         <form method="POST">
           <div class="mb-3">
-            <label for="username" class="form-label">
-              <i class="fas fa-user me-1"></i>
+            <label
+              for="username"
+              class="form-label fw-semibold"
+              style="color: #1f2937"
+            >
+              <i class="fas fa-user me-2" style="color: #059669"></i>
               Nome de usuário
             </label>
             <input
               type="text"
-              class="form-control"
+              class="form-control form-control-lg"
               id="username"
               name="username"
               required
               autofocus
               minlength="3"
               maxlength="50"
+              placeholder="Escolha um nome único"
+              style="
+                border-radius: 12px;
+                border: 2px solid #e5e7eb;
+                padding: 0.875rem 1rem;
+                transition: border-color 0.2s ease;
+              "
+              onfocus="this.style.borderColor='#059669'"
+              onblur="this.style.borderColor='#e5e7eb'"
             />
-            <small class="form-text text-muted">
+            <small class="form-text" style="color: #6b7280">
+              <i class="fas fa-info-circle me-1"></i>
               Entre 3 e 50 caracteres
             </small>
           </div>
 
           <div class="mb-3">
-            <label for="email" class="form-label">
-              <i class="fas fa-envelope me-1"></i>
+            <label
+              for="email"
+              class="form-label fw-semibold"
+              style="color: #1f2937"
+            >
+              <i class="fas fa-envelope me-2" style="color: #059669"></i>
               Email
             </label>
             <input
               type="email"
-              class="form-control"
+              class="form-control form-control-lg"
               id="email"
               name="email"
               required
+              placeholder="seu@email.com"
+              style="
+                border-radius: 12px;
+                border: 2px solid #e5e7eb;
+                padding: 0.875rem 1rem;
+                transition: border-color 0.2s ease;
+              "
+              onfocus="this.style.borderColor='#059669'"
+              onblur="this.style.borderColor='#e5e7eb'"
             />
           </div>
 
-          <div class="mb-3">
-            <label for="password" class="form-label">
-              <i class="fas fa-lock me-1"></i>
+          <div class="mb-4">
+            <label
+              for="password"
+              class="form-label fw-semibold"
+              style="color: #1f2937"
+            >
+              <i class="fas fa-lock me-2" style="color: #059669"></i>
               Senha
             </label>
             <input
               type="password"
-              class="form-control"
+              class="form-control form-control-lg"
               id="password"
               name="password"
               required
               minlength="6"
+              placeholder="Mínimo 6 caracteres"
+              style="
+                border-radius: 12px;
+                border: 2px solid #e5e7eb;
+                padding: 0.875rem 1rem;
+                transition: border-color 0.2s ease;
+              "
+              onfocus="this.style.borderColor='#059669'"
+              onblur="this.style.borderColor='#e5e7eb'"
             />
-            <small class="form-text text-muted"> Mínimo 6 caracteres </small>
+            <small class="form-text" style="color: #6b7280">
+              <i class="fas fa-shield-alt me-1"></i>
+              Mínimo 6 caracteres para sua segurança
+            </small>
           </div>
 
-          <div class="d-grid">
-            <button type="submit" class="btn btn-success">
+          <div class="d-grid mb-4">
+            <button
+              type="submit"
+              class="btn btn-lg fw-semibold"
+              style="
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                border: none;
+                border-radius: 12px;
+                color: white;
+                padding: 1rem;
+                transition: all 0.2s ease;
+              "
+              onmouseover="this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.transform='translateY(0)'"
+            >
               <i class="fas fa-user-plus me-2"></i>
-              Criar Conta
+              Criar Minha Conta
             </button>
           </div>
         </form>
 
-        <div class="text-center mt-3">
-          <p class="mb-0">Já tem uma conta?</p>
+        <hr style="margin: 2rem 0; border-color: #e5e7eb" />
+
+        <div class="text-center">
+          <p class="mb-3" style="color: #6b7280">Já tem uma conta?</p>
           <a
             href="{{ url_for('auth.login') }}"
-            class="btn btn-outline-primary btn-sm"
+            class="btn btn-outline-success btn-lg fw-semibold"
+            style="
+              border-radius: 12px;
+              border: 2px solid #059669;
+              color: #059669;
+              padding: 0.75rem 2rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="this.style.backgroundColor='#059669'; this.style.color='white'"
+            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#059669'"
           >
-            <i class="fas fa-sign-in-alt me-1"></i>
-            Fazer login
+            <i class="fas fa-sign-in-alt me-2"></i>
+            Fazer Login
           </a>
         </div>
       </div>
     </div>
 
-    <div class="text-center mt-3">
-      <small class="text-muted">
-        <i class="fas fa-info-circle me-1"></i>
-        Após criar sua conta, você poderá gerenciar até 30 bots por R$ 0,70 cada
-      </small>
+    <!-- Informações de preço -->
+    <div class="text-center mt-4">
+      <div
+        class="card border-0"
+        style="
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+          border-radius: 12px;
+        "
+      >
+        <div class="card-body py-3">
+          <small style="color: #047857; font-weight: 600">
+            <i class="fas fa-coins me-2"></i>
+            Apenas R$ 0,70 por bot • Pagamento via PIX • Ativação automática
+          </small>
+        </div>
+      </div>
     </div>
   </div>
 </div>

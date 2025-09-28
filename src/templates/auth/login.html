@@ -2,71 +2,144 @@
 endblock %} {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-6 col-lg-4">
-    <div class="card">
-      <div class="card-header text-center">
-        <h4 class="mb-0">
-          <i class="fas fa-sign-in-alt me-2"></i>
-          Fazer Login
-        </h4>
+    <!-- Card principal de login -->
+    <div
+      class="card shadow-lg border-0"
+      style="border-radius: 16px; overflow: hidden"
+    >
+      <!-- Header com gradiente -->
+      <div
+        class="card-header text-center text-white"
+        style="
+          background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+          padding: 2rem 1.5rem;
+        "
+      >
+        <div style="margin-bottom: 1rem">
+          <i class="fas fa-robot" style="font-size: 3rem; color: #fbbf24"></i>
+        </div>
+        <h4 class="mb-0 fw-bold">Bem-vindo de volta!</h4>
+        <p class="mb-0 opacity-75">Faça login para gerenciar seus bots</p>
       </div>
-      <div class="card-body">
+
+      <div class="card-body" style="padding: 2rem">
         <form method="POST">
-          <div class="mb-3">
-            <label for="email" class="form-label">
-              <i class="fas fa-user me-1"></i>
+          <div class="mb-4">
+            <label
+              for="email"
+              class="form-label fw-semibold"
+              style="color: #1f2937"
+            >
+              <i class="fas fa-envelope me-2" style="color: #1e40af"></i>
               Email
             </label>
             <input
               type="email"
-              class="form-control"
+              class="form-control form-control-lg"
               id="email"
               name="email"
               required
               autofocus
               placeholder="seu@email.com"
+              style="
+                border-radius: 12px;
+                border: 2px solid #e5e7eb;
+                padding: 0.875rem 1rem;
+                transition: border-color 0.2s ease;
+              "
+              onfocus="this.style.borderColor='#1e40af'"
+              onblur="this.style.borderColor='#e5e7eb'"
             />
           </div>
 
-          <div class="mb-3">
-            <label for="password" class="form-label">
-              <i class="fas fa-lock me-1"></i>
+          <div class="mb-4">
+            <label
+              for="password"
+              class="form-label fw-semibold"
+              style="color: #1f2937"
+            >
+              <i class="fas fa-lock me-2" style="color: #1e40af"></i>
               Senha
             </label>
             <input
               type="password"
-              class="form-control"
+              class="form-control form-control-lg"
               id="password"
               name="password"
               required
+              placeholder="Digite sua senha"
+              style="
+                border-radius: 12px;
+                border: 2px solid #e5e7eb;
+                padding: 0.875rem 1rem;
+                transition: border-color 0.2s ease;
+              "
+              onfocus="this.style.borderColor='#1e40af'"
+              onblur="this.style.borderColor='#e5e7eb'"
             />
           </div>
 
-          <div class="d-grid">
-            <button type="submit" class="btn btn-primary">
+          <div class="d-grid mb-4">
+            <button
+              type="submit"
+              class="btn btn-lg fw-semibold"
+              style="
+                background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+                border: none;
+                border-radius: 12px;
+                color: white;
+                padding: 1rem;
+                transition: all 0.2s ease;
+              "
+              onmouseover="this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.transform='translateY(0)'"
+            >
               <i class="fas fa-sign-in-alt me-2"></i>
-              Entrar
+              Entrar na Plataforma
             </button>
           </div>
         </form>
 
-        <div class="text-center mt-3">
-          <p class="mb-0">Não tem uma conta?</p>
+        <hr style="margin: 2rem 0; border-color: #e5e7eb" />
+
+        <div class="text-center">
+          <p class="mb-3" style="color: #6b7280">Ainda não tem uma conta?</p>
           <a
             href="{{ url_for('auth.register') }}"
-            class="btn btn-outline-secondary btn-sm"
+            class="btn btn-outline-primary btn-lg fw-semibold"
+            style="
+              border-radius: 12px;
+              border: 2px solid #1e40af;
+              color: #1e40af;
+              padding: 0.75rem 2rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="this.style.backgroundColor='#1e40af'; this.style.color='white'"
+            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#1e40af'"
           >
-            <i class="fas fa-user-plus me-1"></i>
-            Criar conta
+            <i class="fas fa-user-plus me-2"></i>
+            Criar Conta Grátis
           </a>
         </div>
       </div>
     </div>
 
-    <div class="text-center mt-3">
-      <small class="text-muted">
-        <i class="fas fa-robot me-1"></i>
-        Sistema de gerenciamento de bots Telegram 24/7
-      </small>
+    <!-- Informações do sistema -->
+    <div class="text-center mt-4">
+      <div
+        class="card border-0"
+        style="
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+          border-radius: 12px;
+        "
+      >
+        <div class="card-body py-3">
+          <small style="color: #059669; font-weight: 600">
+            <i class="fas fa-shield-alt me-2"></i>
+            Sistema seguro de gerenciamento de bots Telegram 24/7
+          </small>
+        </div>
+      </div>
     </div>
   </div>
 </div>

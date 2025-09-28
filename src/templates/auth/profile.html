@@ -1,60 +1,132 @@
 {% extends "base.html" %} {% block title %}Perfil - Telegram Bot Manager{%
 endblock %} {% block content %}
 <div class="row">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">
-          <i class="fas fa-user me-2"></i>
+  <!-- Informações do perfil -->
+  <div class="col-md-8 mb-4">
+    <div class="card shadow border-0" style="border-radius: 16px">
+      <div
+        class="card-header text-white"
+        style="
+          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+          border-radius: 16px 16px 0 0;
+          padding: 1.5rem;
+        "
+      >
+        <h5 class="mb-0 fw-bold">
+          <i class="fas fa-user-circle me-2" style="font-size: 1.5rem"></i>
           Meu Perfil
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="padding: 2rem">
         <div class="row">
           <div class="col-md-6">
-            <p><strong>Username:</strong> {{ current_user.username }}</p>
-            <p><strong>Email:</strong> {{ current_user.email }}</p>
-            <p>
-              <strong>Membro desde:</strong> {{
-              current_user.created_at.strftime('%d/%m/%Y') }}
-            </p>
+            <div class="mb-3">
+              <label class="fw-semibold" style="color: #1f2937">
+                <i class="fas fa-user me-2" style="color: #1e40af"></i>
+                Username
+              </label>
+              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
+                {{ current_user.username }}
+              </p>
+            </div>
+            <div class="mb-3">
+              <label class="fw-semibold" style="color: #1f2937">
+                <i class="fas fa-envelope me-2" style="color: #1e40af"></i>
+                Email
+              </label>
+              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
+                {{ current_user.email }}
+              </p>
+            </div>
+            <div class="mb-3">
+              <label class="fw-semibold" style="color: #1f2937">
+                <i class="fas fa-calendar me-2" style="color: #1e40af"></i>
+                Membro desde
+              </label>
+              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
+                {{ current_user.created_at.strftime('%d/%m/%Y') }}
+              </p>
+            </div>
           </div>
           <div class="col-md-6">
-            <p>
-              <strong>Total de bots:</strong> {{ current_user.bots|length }}
-            </p>
-            <p>
-              <strong>Bots ativos:</strong> {{
-              current_user.get_active_bots_count() }}
-            </p>
+            <div class="mb-3">
+              <label class="fw-semibold" style="color: #1f2937">
+                <i class="fas fa-robot me-2" style="color: #059669"></i>
+                Total de bots
+              </label>
+              <p
+                class="mb-0"
+                style="font-size: 1.5rem; font-weight: 700; color: #059669"
+              >
+                {{ current_user.bots|length }}
+              </p>
+            </div>
+            <div class="mb-3">
+              <label class="fw-semibold" style="color: #1f2937">
+                <i class="fas fa-play-circle me-2" style="color: #10b981"></i>
+                Bots ativos
+              </label>
+              <p
+                class="mb-0"
+                style="font-size: 1.5rem; font-weight: 700; color: #10b981"
+              >
+                {{ current_user.get_active_bots_count() }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">
+  <!-- Configuração PushinPay -->
+  <div class="col-md-4 mb-4">
+    <div class="card shadow border-0" style="border-radius: 16px">
+      <div
+        class="card-header text-white"
+        style="
+          background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+          border-radius: 16px 16px 0 0;
+          padding: 1.5rem;
+        "
+      >
+        <h5 class="mb-0 fw-bold">
           <i class="fas fa-credit-card me-2"></i>
-          Configuração PushinPay
+          PushinPay
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="padding: 1.5rem">
         {% if current_user.pushinpay_token %}
-        <div class="alert alert-success">
+        <div
+          class="alert alert-success border-0"
+          style="
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #047857;
+            border-radius: 12px;
+          "
+        >
           <i class="fas fa-check-circle me-2"></i>
-          Token PushinPay configurado
+          <strong>Token configurado!</strong>
         </div>
-        <button class="btn btn-outline-primary" onclick="toggleTokenForm()">
+        <button
+          class="btn btn-outline-primary fw-semibold"
+          onclick="toggleTokenForm()"
+          style="border-radius: 10px; border: 2px solid #1e40af"
+        >
           <i class="fas fa-edit me-2"></i>
           Alterar Token
         </button>
         {% else %}
-        <div class="alert alert-warning">
+        <div
+          class="alert alert-warning border-0"
+          style="
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            color: #92400e;
+            border-radius: 12px;
+          "
+        >
           <i class="fas fa-exclamation-triangle me-2"></i>
-          Token PushinPay não configurado
+          <strong>Token não configurado</strong>
         </div>
         {% endif %}
 
@@ -73,9 +145,14 @@ endblock %} {% block content %}
             action="{{ url_for('auth.save_pushinpay_token') }}"
           >
             <div class="mb-3">
-              <label for="token" class="form-label"
-                >Token Bearer PushinPay:</label
+              <label
+                for="token"
+                class="form-label fw-semibold"
+                style="color: #1f2937"
               >
+                <i class="fas fa-key me-2" style="color: #ea580c"></i>
+                Token Bearer PushinPay
+              </label>
               <input
                 type="text"
                 class="form-control"
@@ -83,12 +160,30 @@ endblock %} {% block content %}
                 name="token"
                 placeholder="Bearer 11111|XXXXX"
                 required
+                style="
+                  border-radius: 10px;
+                  border: 2px solid #e5e7eb;
+                  padding: 0.75rem;
+                "
+                onfocus="this.style.borderColor='#ea580c'"
+                onblur="this.style.borderColor='#e5e7eb'"
               />
-              <small class="form-text text-muted">
-                Obtenha seu token no painel da PushinPay
+              <small class="form-text" style="color: #6b7280">
+                <i class="fas fa-info-circle me-1"></i>
+                Obtenha no painel da PushinPay
               </small>
             </div>
-            <button type="submit" class="btn btn-primary">
+            <button
+              type="submit"
+              class="btn fw-semibold"
+              style="
+                background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 0.75rem 1.5rem;
+              "
+            >
               <i class="fas fa-save me-2"></i>
               Salvar Token
             </button>
@@ -99,42 +194,75 @@ endblock %} {% block content %}
   </div>
 </div>
 
-<!-- Informações adicionais -->
+<!-- Como funciona -->
 <div class="row mt-4">
   <div class="col-md-12">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">
-          <i class="fas fa-info-circle me-2"></i>
-          Como Funciona o PushinPay
+    <div class="card shadow border-0" style="border-radius: 16px">
+      <div
+        class="card-header text-white"
+        style="
+          background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+          border-radius: 16px 16px 0 0;
+          padding: 1.5rem;
+        "
+      >
+        <h5 class="mb-0 fw-bold">
+          <i class="fas fa-lightbulb me-2"></i>
+          Como Funciona o Sistema
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="padding: 2rem">
         <div class="row">
-          <div class="col-md-4">
-            <h6><i class="fas fa-key text-primary me-2"></i>Token Bearer</h6>
-            <p>
-              Configure seu token da PushinPay uma única vez. Este token será
-              usado para gerar PIX automaticamente.
-            </p>
+          <div class="col-md-4 mb-4">
+            <div class="text-center">
+              <div class="mb-3">
+                <i
+                  class="fas fa-key"
+                  style="font-size: 3rem; color: #1e40af"
+                ></i>
+              </div>
+              <h6 class="fw-bold" style="color: #1f2937">
+                1. Configure o Token
+              </h6>
+              <p style="color: #6b7280">
+                Adicione seu token da PushinPay uma única vez. Este token será
+                usado para gerar PIX automaticamente para seus clientes.
+              </p>
+            </div>
           </div>
-          <div class="col-md-4">
-            <h6>
-              <i class="fas fa-share-alt text-success me-2"></i>Split Automático
-            </h6>
-            <p>
-              100% dos pagamentos vão direto para a conta configurada no sistema
-              (taxa de R$ 0,70 por bot).
-            </p>
+          <div class="col-md-4 mb-4">
+            <div class="text-center">
+              <div class="mb-3">
+                <i
+                  class="fas fa-coins"
+                  style="font-size: 3rem; color: #059669"
+                ></i>
+              </div>
+              <h6 class="fw-bold" style="color: #1f2937">
+                2. Pagamento Direto
+              </h6>
+              <p style="color: #6b7280">
+                100% dos pagamentos vão direto para sua conta. Sistema cobra
+                apenas R$ 0,70 por bot ativado mensalmente.
+              </p>
+            </div>
           </div>
-          <div class="col-md-4">
-            <h6>
-              <i class="fas fa-robot text-info me-2"></i>Ativação Automática
-            </h6>
-            <p>
-              Após confirmação do pagamento, seus bots são ativados
-              automaticamente e começam a funcionar 24/7.
-            </p>
+          <div class="col-md-4 mb-4">
+            <div class="text-center">
+              <div class="mb-3">
+                <i
+                  class="fas fa-rocket"
+                  style="font-size: 3rem; color: #ea580c"
+                ></i>
+              </div>
+              <h6 class="fw-bold" style="color: #1f2937">
+                3. Ativação Automática
+              </h6>
+              <p style="color: #6b7280">
+                Após confirmação do pagamento, seus bots são ativados
+                automaticamente e funcionam 24/7 sem interrupção.
+              </p>
+            </div>
           </div>
         </div>
       </div>
