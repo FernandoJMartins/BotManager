@@ -169,12 +169,6 @@ endblock %} {% block head %}
           Limite atingido
         </span>
         {% endif %}
-        <a
-          href="{{ url_for('main.dashboard') }}"
-          class="btn btn-outline-light btn-lg"
-        >
-          <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-        </a>
       </div>
     </div>
   </div>
@@ -183,30 +177,7 @@ endblock %} {% block head %}
 <div class="container">
   {% if bots %}
   <!-- Estatísticas Overview -->
-  <div class="stats-overview animate-fade-in-up">
-    <div class="row text-center">
-      <div class="col-md-3">
-        <i class="fas fa-robot fa-2x mb-2"></i>
-        <h4>{{ bots|length }}</h4>
-        <small>Total de Bots</small>
-      </div>
-      <div class="col-md-3">
-        <i class="fas fa-play-circle fa-2x mb-2"></i>
-        <h4>{{ bots|selectattr('is_running')|list|length }}</h4>
-        <small>Bots Rodando</small>
-      </div>
-      <div class="col-md-3">
-        <i class="fas fa-check-circle fa-2x mb-2"></i>
-        <h4>{{ bots|selectattr('is_active')|list|length }}</h4>
-        <small>Bots Ativos</small>
-      </div>
-      <div class="col-md-3">
-        <i class="fas fa-clock fa-2x mb-2"></i>
-        <h4>{{ bots|rejectattr('is_active')|list|length }}</h4>
-        <small>Pendentes</small>
-      </div>
-    </div>
-  </div>
+  <div class="stats-overview animate-fade-in-up"></div>
 
   <!-- Grid de Bots -->
   <div class="row">

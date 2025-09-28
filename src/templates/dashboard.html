@@ -68,65 +68,7 @@ endblock %} {% block head %}
         <div class="card-body text-center">
           <i class="fas fa-coins fa-3x mb-3"></i>
           <h3 class="mb-2">R$ 0,70</h3>
-          <small>Preço por Bot</small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Ações rápidas -->
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="fas fa-bolt me-2"></i>
-            Ações Rápidas
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <a
-                href="{{ url_for('bots.create_bot') }}"
-                class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center"
-                {%
-                if
-                not
-                user_stats.can_add_more
-                %}disabled{%
-                endif
-                %}
-              >
-                <i class="fas fa-plus me-2"></i>
-                Criar Novo Bot
-              </a>
-              {% if not user_stats.can_add_more %}
-              <small class="text-muted mt-2 d-block text-center">
-                <i class="fas fa-exclamation-triangle me-1"></i>
-                Limite de 30 bots atingido
-              </small>
-              {% endif %}
-            </div>
-            <div class="col-md-4 mb-3">
-              <a
-                href="{{ url_for('bots.list_bots') }}"
-                class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center"
-              >
-                <i class="fas fa-list me-2"></i>
-                Gerenciar Bots
-              </a>
-            </div>
-            <div class="col-md-4 mb-3">
-              <a
-                href="{{ url_for('auth.profile') }}"
-                class="btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center"
-              >
-                <i class="fas fa-user me-2"></i>
-                Ver Perfil
-              </a>
-            </div>
-          </div>
+          <small>Preço por Transação</small>
         </div>
       </div>
     </div>
