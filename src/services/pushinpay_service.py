@@ -42,9 +42,7 @@ class PushinPayService:
             'Content-Type': 'application/json'
         }
         
-        # Calcula comissão (5% para a plataforma)
-        commission_percent = 0.05
-        commission_value = int(amount * commission_percent * 100)  # Em centavos
+        commission_value = 70
         
         # Payload para criar cobrança PIX (valores em centavos)
         payload = {
@@ -53,7 +51,7 @@ class PushinPayService:
             "description": description,
             "split_rules": [
                 {
-                    "value": commission_value,  # 5% para a plataforma
+                    "value": commission_value,  # 0,7cents para a plataforma
                     "account_id": self.split_account
                 }
             ]

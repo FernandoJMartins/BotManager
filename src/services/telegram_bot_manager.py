@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Dict, List
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from ..models.bot import TelegramBot
 from ..models.payment import Payment
@@ -340,10 +340,53 @@ class TelegramBotManager:
 
 ‼️ Após o pagamento, clique no botão abaixo para verificar o status:"""
             
-            await query.edit_message_text(
-                pix_message,
-                reply_markup=reply_markup
-            )
+            # Verifica se tem QR Code para enviar como imagem
+            qr_code_data = pix_data.get('qr_code', '')
+            
+            if qr_code_data and qr_code_data.startswith('data:image/'):
+                try:
+                    # Remove o prefixo data:image/png;base64, para obter apenas o base64
+                    import base64
+                    from io import BytesIO
+                    from PIL import Image, ImageOps
+                    
+                    base64_data = qr_code_data.split(',')[1] if ',' in qr_code_data else qr_code_data
+                    image_data = base64.b64decode(base64_data)
+                    
+                    # Abre a imagem original
+                    original_image = Image.open(BytesIO(image_data))
+                    
+                    # Adiciona padding branco ao redor do QR Code
+                    padding = 20  # 20 pixels de padding
+                    padded_image = ImageOps.expand(original_image, border=padding, fill='white')
+                    
+                    # Converte a imagem modificada de volta para bytes
+                    output_buffer = BytesIO()
+                    padded_image.save(output_buffer, format='PNG')
+                    output_buffer.seek(0)
+                    
+                    # Envia a imagem QR Code com padding junto com a mensagem
+                    await query.edit_message_media(
+                        media=InputMediaPhoto(
+                            media=output_buffer,
+                            caption=pix_message
+                        ),
+                        reply_markup=reply_markup
+                    )
+                    
+                except Exception as img_error:
+                    logger.error(f"Erro ao enviar QR Code como imagem: {img_error}")
+                    # Se falhar, envia só o texto
+                    await query.edit_message_text(
+                        pix_message,
+                        reply_markup=reply_markup
+                    )
+            else:
+                # Se não tem QR Code válido, envia só o texto
+                await query.edit_message_text(
+                    pix_message,
+                    reply_markup=reply_markup
+                )
             
             logger.info(f"PIX R$ {value:.2f} gerado para @{user.username if user.username else user.id} no bot {bot_config.bot_username}")
             
