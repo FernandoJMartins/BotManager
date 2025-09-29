@@ -211,27 +211,61 @@ class TelegramBotManager:
             
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Envia mensagem de boas-vindas
-            if bot_config.welcome_image:
-                # Se tem imagem, envia com a imagem
-                await update.message.reply_photo(
-                    photo=bot_config.welcome_image,
-                    caption=welcome_text,
-                    reply_markup=reply_markup
-                )
+            # Envia mídias iniciais na sequência correta
+            
+            # 1. Primeiro envia a imagem inicial se existir (via file_id ou caminho local)
+            if bot_config.welcome_image_file_id:
+                try:
+                    await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
+                    logger.info(f"✅ Imagem inicial enviada via file_id")
+                except Exception as img_error:
+                    logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
+                    # Fallback para arquivo local se existir
+                    if bot_config.welcome_image:
+                        try:
+                            with open(bot_config.welcome_image, 'rb') as img_file:
+                                await update.message.reply_photo(photo=img_file)
+                            logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                        except Exception as local_img_error:
+                            logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+            elif bot_config.welcome_image:
+                # Se não tem file_id mas tem arquivo local
+                try:
+                    with open(bot_config.welcome_image, 'rb') as img_file:
+                        await update.message.reply_photo(photo=img_file)
+                    logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                except Exception as local_img_error:
+                    logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+            
+            # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
+            if bot_config.welcome_audio_file_id:
+                try:
+                    await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
+                    logger.info(f"✅ Áudio inicial enviado via file_id")
+                except Exception as audio_error:
+                    logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
+                    # Fallback para arquivo local se existir
+                    if bot_config.welcome_audio:
+                        try:
+                            with open(bot_config.welcome_audio, 'rb') as audio_file:
+                                await update.message.reply_audio(audio=audio_file)
+                            logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                        except Exception as local_audio_error:
+                            logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
             elif bot_config.welcome_audio:
-                # Se tem áudio, envia com o áudio
-                await update.message.reply_audio(
-                    audio=bot_config.welcome_audio,
-                    caption=welcome_text,
-                    reply_markup=reply_markup
-                )
-            else:
-                # Só texto
-                await update.message.reply_text(
-                    welcome_text,
-                    reply_markup=reply_markup
-                )
+                # Se não tem file_id mas tem arquivo local
+                try:
+                    with open(bot_config.welcome_audio, 'rb') as audio_file:
+                        await update.message.reply_audio(audio=audio_file)
+                    logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                except Exception as local_audio_error:
+                    logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+            
+            # 3. Por último envia a mensagem de boas-vindas com os botões
+            await update.message.reply_text(
+                welcome_text,
+                reply_markup=reply_markup
+            )
             
             logger.info(f"✅ Resposta enviada com sucesso para @{user.username or user.id} no bot {bot_config.bot_username}")
             
@@ -359,6 +393,12 @@ class TelegramBotManager:
 
 ‼️ Após o pagamento, clique no botão abaixo para verificar o status:"""
             
+            # Responde ao callback para confirmar a seleção
+            await query.answer(f"Plano {plan_name} selecionado!")
+            
+            # Envia nova mensagem com as informações do PIX
+            user = update.effective_user
+            
             # Verifica se tem QR Code para enviar como imagem
             qr_code_data = pix_data.get('qr_code', '')
             
@@ -384,26 +424,27 @@ class TelegramBotManager:
                     padded_image.save(output_buffer, format='PNG')
                     output_buffer.seek(0)
                     
-                    # Envia a imagem QR Code com padding junto com a mensagem
-                    await query.edit_message_media(
-                        media=InputMediaPhoto(
-                            media=output_buffer,
-                            caption=pix_message
-                        ),
+                    # Envia nova mensagem com QR Code
+                    await context.bot.send_photo(
+                        chat_id=user.id,
+                        photo=output_buffer,
+                        caption=pix_message,
                         reply_markup=reply_markup
                     )
                     
                 except Exception as img_error:
                     logger.error(f"Erro ao enviar QR Code como imagem: {img_error}")
                     # Se falhar, envia só o texto
-                    await query.edit_message_text(
-                        pix_message,
+                    await context.bot.send_message(
+                        chat_id=user.id,
+                        text=pix_message,
                         reply_markup=reply_markup
                     )
             else:
                 # Se não tem QR Code válido, envia só o texto
-                await query.edit_message_text(
-                    pix_message,
+                await context.bot.send_message(
+                    chat_id=user.id,
+                    text=pix_message,
                     reply_markup=reply_markup
                 )
             
@@ -498,12 +539,16 @@ class TelegramBotManager:
 ⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
 (Verifique se os IDs dos grupos estão configurados corretamente)"""
             
-            # Botão para voltar ao início
+            # Responde ao callback
+            await query.answer("Teste de pagamento executado!")
+            
+            # Envia nova mensagem de teste
             keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            await query.edit_message_text(
-                success_message,
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=success_message,
                 reply_markup=reply_markup
             )
             
@@ -602,17 +647,23 @@ Aproveite o acesso exclusivo! 🚀"""
 ⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
 Entre em contato com o suporte."""
                 
-                # Botão para voltar ao início
+                # Responde ao callback
+                await query.answer("Pagamento aprovado!")
+                
+                # Envia nova mensagem de sucesso
                 keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
-                await query.edit_message_text(
-                    success_message,
+                await context.bot.send_message(
+                    chat_id=user.id,
+                    text=success_message,
                     reply_markup=reply_markup
                 )
                 
             else:
                 # Pagamento ainda pendente
+                await query.answer("Pagamento ainda pendente...")
+                
                 keyboard = [
                     [InlineKeyboardButton("🔄 Verificar Novamente", callback_data=f"check_{payment_id}")],
                     [InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]

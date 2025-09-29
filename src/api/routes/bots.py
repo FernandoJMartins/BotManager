@@ -7,7 +7,9 @@ from ...models.bot import TelegramBot
 from ...models.payment import Payment
 from ...database.models import db
 from ...services.pushinpay_service import PushinPayService
+from ...services.telegram_media_service import TelegramMediaService, run_async_media_upload
 from ...utils.logger import logger
+from ...utils.validators import TelegramValidationService
 
 bots_bp = Blueprint('bots', __name__, url_prefix='/bots')
 
@@ -134,26 +136,6 @@ def create_bot():
             return render_template('bots/create.html')
         
         try:
-            # Processa uploads de arquivos
-            welcome_image_path = None
-            welcome_audio_path = None
-            
-            if 'welcome_image' in request.files:
-                file = request.files['welcome_image']
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    welcome_image_path = os.path.join(UPLOAD_FOLDER, 'images', filename)
-                    os.makedirs(os.path.dirname(welcome_image_path), exist_ok=True)
-                    file.save(welcome_image_path)
-            
-            if 'welcome_audio' in request.files:
-                file = request.files['welcome_audio']
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    welcome_audio_path = os.path.join(UPLOAD_FOLDER, 'audio', filename)
-                    os.makedirs(os.path.dirname(welcome_audio_path), exist_ok=True)
-                    file.save(welcome_audio_path)
-            
             # Cria o bot
             bot = TelegramBot(
                 bot_token=token,
@@ -164,49 +146,139 @@ def create_bot():
                 user_id=current_user.id,
                 is_active=True  # Ativo imediatamente
             )
-            
             db.session.add(bot)
             db.session.flush()  # Para obter o ID do bot
-            
+
+            # Processa uploads de arquivos usando TelegramMediaService
+            if 'welcome_image' in request.files:
+                file = request.files['welcome_image']
+                if file and allowed_file(file.filename):
+                    try:
+                        media_service = TelegramMediaService(bot.bot_token)
+                        validation = media_service.validate_media_file(file)
+                        if validation['valid'] and validation['media_type'] == 'photo':
+                            temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot.id}_img_")
+                            try:
+                                if bot.id_logs:
+                                    file_id = run_async_media_upload(
+                                        bot.bot_token,
+                                        temp_path,
+                                        bot.id_logs,
+                                        bot.id,
+                                        'photo'
+                                    )
+                                    if file_id:
+                                        bot.welcome_image_file_id = file_id
+                                        bot.welcome_image = None
+                                        logger.info(f"✅ Imagem enviada para Telegram. File ID: {file_id}")
+                                    else:
+                                        logger.warning("⚠️  Falha no upload para Telegram, mantendo arquivo local")
+                                        filename = secure_filename(file.filename)
+                                        filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                        file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                        file.save(file_path)
+                                        bot.welcome_image = file_path
+                                else:
+                                    logger.warning("⚠️  Grupo de logs não configurado, salvando localmente")
+                                    filename = secure_filename(file.filename)
+                                    filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                    file.save(file_path)
+                                    bot.welcome_image = file_path
+                            finally:
+                                media_service.cleanup_temp_file(temp_path)
+                        else:
+                            flash(f'Erro na validação da imagem: {validation.get("error", "Arquivo inválido")}', 'error')
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao processar imagem: {e}")
+                        flash('Erro ao processar imagem. Tente novamente.', 'error')
+
+            if 'welcome_audio' in request.files:
+                file = request.files['welcome_audio']
+                if file and allowed_file(file.filename):
+                    try:
+                        media_service = TelegramMediaService(bot.bot_token)
+                        validation = media_service.validate_media_file(file)
+                        if validation['valid'] and validation['media_type'] == 'audio':
+                            temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot.id}_audio_")
+                            try:
+                                if bot.id_logs:
+                                    file_id = run_async_media_upload(
+                                        bot.bot_token,
+                                        temp_path,
+                                        bot.id_logs,
+                                        bot.id,
+                                        'audio'
+                                    )
+                                    if file_id:
+                                        bot.welcome_audio_file_id = file_id
+                                        bot.welcome_audio = None
+                                        logger.info(f"✅ Áudio enviado para Telegram. File ID: {file_id}")
+                                    else:
+                                        logger.warning("⚠️  Falha no upload para Telegram, mantendo arquivo local")
+                                        filename = secure_filename(file.filename)
+                                        filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                        file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                        file.save(file_path)
+                                        bot.welcome_audio = file_path
+                                else:
+                                    logger.warning("⚠️  Grupo de logs não configurado, salvando localmente")
+                                    filename = secure_filename(file.filename)
+                                    filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                    file.save(file_path)
+                                    bot.welcome_audio = file_path
+                            finally:
+                                media_service.cleanup_temp_file(temp_path)
+                        else:
+                            flash(f'Erro na validação do áudio: {validation.get("error", "Arquivo inválido")}', 'error')
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao processar áudio: {e}")
+                        flash('Erro ao processar áudio. Tente novamente.', 'error')
+
             # Verifica se usuário tem token PushinPay
             if not current_user.pushinpay_token:
                 flash('Configure seu token PushinPay no perfil antes de criar bots.', 'error')
                 return redirect(url_for('auth.profile'))
-            
+
             # Bot é criado diretamente ativo (sem necessidade de pagamento interno)
             bot.is_active = True
             db.session.commit()
-            
+
             # Inicia o bot Telegram automaticamente
             from ...services.telegram_bot_manager import bot_manager
             import asyncio
-            
+
             def start_bot_async():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(bot_manager.start_bot(bot))
-            
+
             import threading
             bot_thread = threading.Thread(target=start_bot_async, daemon=True)
             bot_thread.start()
-            
+
             if request.is_json:
                 return jsonify({
                     'success': True,
                     'bot_id': bot.id,
                     'message': 'Bot criado e ativado com sucesso!'
                 }), 201
-            
+
             flash('Bot criado e ativado com sucesso!', 'success')
             return redirect(url_for('dashboard'))
-            
+
         except Exception as e:
             db.session.rollback()
             if request.is_json:
                 return jsonify({'error': f'Erro ao criar bot: {str(e)}'}), 500
             flash(f'Erro ao criar bot: {str(e)}', 'error')
             return render_template('bots/create_new.html')
-    
+
     return render_template('bots/create_new.html')
 
 
@@ -325,29 +397,125 @@ def edit_bot(slug):
             else:
                 bot.id_logs = None
             
-            # Processa upload de imagem de boas-vindas
+            # Processa upload de imagem de boas-vindas usando Telegram
             if 'welcome_image' in request.files:
                 file = request.files['welcome_image']
                 if file and file.filename and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
-                    
-                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                    file_path = os.path.join(UPLOAD_FOLDER, filename)
-                    file.save(file_path)
-                    bot.welcome_image = file_path
+                    try:
+                        # Cria serviço de mídia
+                        media_service = TelegramMediaService(bot.bot_token)
+                        
+                        # Valida arquivo
+                        validation = media_service.validate_media_file(file)
+                        
+                        if validation['valid'] and validation['media_type'] == 'photo':
+                            # Cria arquivo temporário
+                            temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot.id}_img_")
+                            
+                            try:
+                                # Faz upload para Telegram se tiver grupo de logs configurado
+                                if bot.id_logs:
+                                    file_id = run_async_media_upload(
+                                        bot.bot_token, 
+                                        temp_path, 
+                                        bot.id_logs, 
+                                        bot.id, 
+                                        'photo'
+                                    )
+                                    
+                                    if file_id:
+                                        bot.welcome_image_file_id = file_id
+                                        # Remove referência ao arquivo local antigo se existir
+                                        bot.welcome_image = None
+                                        logger.info(f"✅ Imagem enviada para Telegram. File ID: {file_id}")
+                                    else:
+                                        logger.warning("⚠️  Falha no upload para Telegram, mantendo arquivo local")
+                                        # Fallback: salva localmente se o upload falhar
+                                        filename = secure_filename(file.filename)
+                                        filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                        file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                        file.save(file_path)
+                                        bot.welcome_image = file_path
+                                else:
+                                    logger.warning("⚠️  Grupo de logs não configurado, salvando localmente")
+                                    # Fallback: salva localmente se não tiver grupo configurado
+                                    filename = secure_filename(file.filename)
+                                    filename = f"bot_{bot.id}_welcome_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                    file.save(file_path)
+                                    bot.welcome_image = file_path
+                                    
+                            finally:
+                                # Limpa arquivo temporário
+                                media_service.cleanup_temp_file(temp_path)
+                        else:
+                            flash(f'Erro na validação da imagem: {validation.get("error", "Arquivo inválido")}', 'error')
+                            
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao processar imagem: {e}")
+                        flash('Erro ao processar imagem. Tente novamente.', 'error')
             
-            # Processa upload de áudio de boas-vindas
+            # Processa upload de áudio de boas-vindas usando Telegram
             if 'welcome_audio' in request.files:
                 file = request.files['welcome_audio']
                 if file and file.filename and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
-                    
-                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                    file_path = os.path.join(UPLOAD_FOLDER, filename)
-                    file.save(file_path)
-                    bot.welcome_audio = file_path
+                    try:
+                        # Cria serviço de mídia
+                        media_service = TelegramMediaService(bot.bot_token)
+                        
+                        # Valida arquivo
+                        validation = media_service.validate_media_file(file)
+                        
+                        if validation['valid'] and validation['media_type'] == 'audio':
+                            # Cria arquivo temporário
+                            temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot.id}_audio_")
+                            
+                            try:
+                                # Faz upload para Telegram se tiver grupo de logs configurado
+                                if bot.id_logs:
+                                    file_id = run_async_media_upload(
+                                        bot.bot_token, 
+                                        temp_path, 
+                                        bot.id_logs, 
+                                        bot.id, 
+                                        'audio'
+                                    )
+                                    
+                                    if file_id:
+                                        bot.welcome_audio_file_id = file_id
+                                        # Remove referência ao arquivo local antigo se existir
+                                        bot.welcome_audio = None
+                                        logger.info(f"✅ Áudio enviado para Telegram. File ID: {file_id}")
+                                    else:
+                                        logger.warning("⚠️  Falha no upload para Telegram, mantendo arquivo local")
+                                        # Fallback: salva localmente se o upload falhar
+                                        filename = secure_filename(file.filename)
+                                        filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                        file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                        file.save(file_path)
+                                        bot.welcome_audio = file_path
+                                else:
+                                    logger.warning("⚠️  Grupo de logs não configurado, salvando localmente")
+                                    # Fallback: salva localmente se não tiver grupo configurado
+                                    filename = secure_filename(file.filename)
+                                    filename = f"bot_{bot.id}_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                                    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                                    file.save(file_path)
+                                    bot.welcome_audio = file_path
+                                    
+                            finally:
+                                # Limpa arquivo temporário
+                                media_service.cleanup_temp_file(temp_path)
+                        else:
+                            flash(f'Erro na validação do áudio: {validation.get("error", "Arquivo inválido")}', 'error')
+                            
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao processar áudio: {e}")
+                        flash('Erro ao processar áudio. Tente novamente.', 'error')
             
             db.session.commit()
             
@@ -364,4 +532,4 @@ def edit_bot(slug):
     return render_template('bots/edit.html', bot=bot)
 
 
-# Rota para iniciar bot
+# Todos os bots ativos devem iniciar automaticamente
