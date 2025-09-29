@@ -1,65 +1,25 @@
+version: '3.8'
+
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:17
-    container_name: telegram-bot-postgres
-    environment:
-      POSTGRES_DB: telegram_bot_manager
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ifpb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - bot-network
-    restart: always
-
-  # pgAdmin4 for database management
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: telegram-bot-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@telegram-bot.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-      PGADMIN_CONFIG_WTF_CSRF_SECRET_KEY: "'telegram-bot-pgadmin-secret-key-2025'"
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "8080:80"
-    networks:
-      - bot-network
-    restart: always
-    depends_on:
-      - postgres
-
-  # Main Application
   telegram-bot-manager:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: telegram-bot-app
     volumes:
       - ./src:/app/src
       - ./config:/app/config
       - ./requirements.txt:/app/requirements.txt
-    environment:
-      - DATABASE_URL=postgresql://postgres:ifpb@postgres:5432/telegram_bot_manager
-      - SECRET_KEY=sua-chave-secreta-muito-forte-aqui-123
-      - FLASK_ENV=production
+    env_file:
+      - .env.example
     ports:
       - "5000:5000"
+    restart: always
+    # Configurações específicas para dados móveis
+    dns:
+      - "8.8.8.8"
+      - "1.1.1.1"
     networks:
       - bot-network
-    restart: always
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
-  pgadmin_data:
 
 networks:
   bot-network:

@@ -4,6 +4,10 @@ from datetime import datetime
 from typing import Dict, List
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
+import urllib3
+
+# Desabilita warnings SSL temporariamente para resolver problema de conectividade
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from ..models.bot import TelegramBot
 from ..models.payment import Payment
 from ..models.client import User
@@ -20,10 +24,28 @@ class TelegramBotManager:
         self.active_bots: Dict[str, Application] = {}  # bot_token -> Application
         self.pushinpay_service = PushinPayService()
     
+    async def _check_network_connectivity(self) -> bool:
+        """Verifica conectividade de rede com o Telegram"""
+        import requests
+        try:
+            response = requests.get('https://api.telegram.org/', timeout=10)
+            # 200 ou 401 são códigos OK para conectividade
+            return response.status_code in [200, 401]
+        except Exception as e:
+            logger.warning(f"Falha na verificação de conectividade: {e}")
+            return False
+    
     async def start_bot(self, bot_config: TelegramBot) -> bool:
         """Inicia um bot Telegram individual"""
-        max_retries = 3
-        retry_delay = 5
+        max_retries = 5
+        retry_delay = 10
+        
+        # Verifica conectividade antes de tentar (mas não falha se não conseguir)
+        connectivity_ok = await self._check_network_connectivity()
+        if not connectivity_ok:
+            logger.warning("Problemas de conectividade detectados, mas tentando iniciar bot mesmo assim...")
+        else:
+            logger.info("Conectividade com Telegram API confirmada")
         
         for attempt in range(max_retries):
             try:
@@ -33,7 +55,7 @@ class TelegramBotManager:
                 
                 logger.info(f"Tentativa {attempt + 1}/{max_retries} de iniciar bot {bot_config.bot_username}")
                 
-                # Cria aplicação do bot com configurações de conexão mais robustas
+                # Cria aplicação do bot com configurações padrão (Telegram requer SSL)
                 application = Application.builder().token(bot_config.bot_token).build()
                 
                 # Adiciona handlers
@@ -97,11 +119,21 @@ class TelegramBotManager:
                 return True
                 
             except Exception as e:
+                error_msg = str(e)
                 logger.error(f"Tentativa {attempt + 1} falhou para bot {bot_config.bot_username}: {e}")
                 
-                if attempt < max_retries - 1:
-                    logger.info(f"Aguardando {retry_delay}s antes da próxima tentativa...")
-                    await asyncio.sleep(retry_delay)
+                # Se é erro SSL, tenta aguardar mais tempo
+                if "SSL" in error_msg or "TLS" in error_msg:
+                    if attempt < max_retries - 1:
+                        # Para problemas SSL, aguarda mais tempo
+                        current_delay = retry_delay * (attempt + 2)  # Aumenta mais o delay
+                        logger.info(f"Erro SSL detectado. Aguardando {current_delay}s antes da próxima tentativa...")
+                        await asyncio.sleep(current_delay)
+                elif attempt < max_retries - 1:
+                    # Delay normal para outros erros
+                    current_delay = retry_delay * (attempt + 1)
+                    logger.info(f"Aguardando {current_delay}s antes da próxima tentativa...")
+                    await asyncio.sleep(current_delay)
                 else:
                     logger.error(f"Todas as tentativas falharam para bot {bot_config.bot_username}")
                     return False
@@ -216,52 +248,88 @@ class TelegramBotManager:
             
             if can_send_media:
                 # 1. Primeiro envia a imagem inicial se existir (via file_id ou caminho local)
-                if bot_config.welcome_image_file_id:
-                    try:
-                        await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
-                        logger.info(f"✅ Imagem inicial enviada via file_id")
-                    except Exception as img_error:
-                        logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
-                        # Fallback para arquivo local se existir
-                        if bot_config.welcome_image:
-                            try:
-                                with open(bot_config.welcome_image, 'rb') as img_file:
-                                    await update.message.reply_photo(photo=img_file)
-                                logger.info(f"✅ Imagem inicial enviada via arquivo local")
-                            except Exception as local_img_error:
-                                logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
-                elif bot_config.welcome_image:
-                    # Se não tem file_id mas tem arquivo local
+                image_sent = False
+                
+                # Tenta enviar via file_id com retry
+                if bot_config.welcome_image_file_id and not image_sent:
+                    for retry_attempt in range(3):
+                        try:
+                            await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
+                            logger.info(f"✅ Imagem inicial enviada via file_id")
+                            image_sent = True
+                            break
+                        except Exception as img_error:
+                            if "SSL" in str(img_error) or "TLS" in str(img_error):
+                                logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou (SSL): {img_error}")
+                                if retry_attempt < 2:
+                                    await asyncio.sleep(2 * (retry_attempt + 1))  # 2s, 4s
+                                    continue
+                                else:
+                                    logger.error(f"❌ Todas as tentativas de envio via file_id falharam")
+                            else:
+                                logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
+                                break
+                
+                # Fallback para arquivo local se file_id falhou
+                if not image_sent and bot_config.welcome_image:
                     try:
                         with open(bot_config.welcome_image, 'rb') as img_file:
                             await update.message.reply_photo(photo=img_file)
                         logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                        image_sent = True
                     except Exception as local_img_error:
                         logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
                 
-                # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
-                if bot_config.welcome_audio_file_id:
+                # Se nem file_id nem arquivo local, mas tem só arquivo local configurado
+                if not image_sent and bot_config.welcome_image and not bot_config.welcome_image_file_id:
                     try:
-                        await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
-                        logger.info(f"✅ Áudio inicial enviado via file_id")
-                    except Exception as audio_error:
-                        logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
-                        # Fallback para arquivo local se existir
-                        if bot_config.welcome_audio:
-                            try:
-                                with open(bot_config.welcome_audio, 'rb') as audio_file:
-                                    await update.message.reply_audio(audio=audio_file)
-                                logger.info(f"✅ Áudio inicial enviado via arquivo local")
-                            except Exception as local_audio_error:
-                                logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
-                elif bot_config.welcome_audio:
-                    # Se não tem file_id mas tem arquivo local
+                        with open(bot_config.welcome_image, 'rb') as img_file:
+                            await update.message.reply_photo(photo=img_file)
+                        logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                        image_sent = True
+                    except Exception as local_img_error:
+                        logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+                
+                # Log final sobre o status da imagem
+                if not image_sent:
+                    logger.warning(f"⚠️ Não foi possível enviar imagem inicial devido a problemas de conectividade. Continuando com o texto...")
+                
+                # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
+                audio_sent = False
+                
+                # Tenta enviar áudio via file_id com retry
+                if bot_config.welcome_audio_file_id and not audio_sent:
+                    for retry_attempt in range(3):
+                        try:
+                            await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
+                            logger.info(f"✅ Áudio inicial enviado via file_id")
+                            audio_sent = True
+                            break
+                        except Exception as audio_error:
+                            if "SSL" in str(audio_error) or "TLS" in str(audio_error):
+                                logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou (SSL) para áudio: {audio_error}")
+                                if retry_attempt < 2:
+                                    await asyncio.sleep(2 * (retry_attempt + 1))
+                                    continue
+                                else:
+                                    logger.error(f"❌ Todas as tentativas de envio de áudio via file_id falharam")
+                            else:
+                                logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
+                                break
+                
+                # Fallback para arquivo local
+                if not audio_sent and bot_config.welcome_audio:
                     try:
                         with open(bot_config.welcome_audio, 'rb') as audio_file:
                             await update.message.reply_audio(audio=audio_file)
                         logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                        audio_sent = True
                     except Exception as local_audio_error:
                         logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+                
+                # Log final sobre o status do áudio
+                if not audio_sent and (bot_config.welcome_audio_file_id or bot_config.welcome_audio):
+                    logger.warning(f"⚠️ Não foi possível enviar áudio inicial devido a problemas de conectividade. Continuando...")
             else:
                 logger.info(f"⚠️ Mídia não enviada - Grupos VIP e/ou Notificações não configurados para bot {bot_config.bot_username}")
             
@@ -516,13 +584,34 @@ class TelegramBotManager:
                 "VIP"
             )
             
+            # Pega informações do plano
+            plan_names = bot_config.get_plan_names()
+            plan_durations = bot_config.get_plan_durations()
+            plan_name = "Plano Especial"
+            plan_duration = "mensal"
+            
+            # Tenta encontrar o plano baseado no valor
+            pix_values = bot_config.get_pix_values()
+            if pix_values:
+                for i, value in enumerate(pix_values):
+                    if abs(value - payment.amount) < 0.01:  # Comparação com tolerância
+                        if plan_names and i < len(plan_names):
+                            plan_name = plan_names[i]
+                        if plan_durations and i < len(plan_durations):
+                            plan_duration = plan_durations[i]
+                        break
+            
             # Envia notificação para o grupo de logs
             await self._send_log_notification(
                 context.bot,
                 bot_config.get_log_group_id(),
                 user,
                 payment.amount,
-                success_vip
+                success_vip,
+                payment,
+                bot_config,
+                plan_name,
+                plan_duration
             )
             
             # Resposta ao usuário
@@ -624,13 +713,34 @@ class TelegramBotManager:
                     "VIP"
                 )
                 
+                # Pega informações do plano
+                plan_names = bot_config.get_plan_names()
+                plan_durations = bot_config.get_plan_durations()
+                plan_name = "Plano Não Identificado"
+                plan_duration = "indefinido"
+                
+                # Tenta encontrar o plano baseado no valor
+                pix_values = bot_config.get_pix_values()
+                if pix_values:
+                    for i, value in enumerate(pix_values):
+                        if abs(value - payment.amount) < 0.01:  # Comparação com tolerância
+                            if plan_names and i < len(plan_names):
+                                plan_name = plan_names[i]
+                            if plan_durations and i < len(plan_durations):
+                                plan_duration = plan_durations[i]
+                            break
+                
                 # Envia notificação para o grupo de logs
                 await self._send_log_notification(
                     context.bot,
                     bot_config.get_log_group_id(),
                     user,
                     payment.amount,
-                    success_vip
+                    success_vip,
+                    payment,
+                    bot_config,
+                    plan_name,
+                    plan_duration
                 )
                 
                 # Resposta ao usuário
@@ -716,35 +826,99 @@ Entre em contato com o suporte."""
             logger.error(f"❌ Erro ao adicionar usuário {user_id} ao grupo {group_type}: {e}")
             return False
     
-    async def _send_log_notification(self, bot, log_group_id: str, user, amount: float, success: bool):
-        """Envia notificação para o grupo de logs"""
+    async def _send_log_notification(self, bot, log_group_id: str, user, amount: float, success: bool, payment=None, bot_config=None, plan_name="", plan_duration=""):
+        """Envia notificação melhorada para o grupo de logs"""
         try:
             if not log_group_id:
                 logger.warning("⚠️  ID do grupo de logs não configurado")
                 return
             
-            # Monta a mensagem de log
-            status_emoji = "✅" if success else "❌"
-            status_text = "SUCESSO" if success else "ERRO"
+            # Busca informações extras do usuário
+            user_info = await self._get_enhanced_user_info(bot, user)
             
-            log_message = f"""🔔 **NOVO PAGAMENTO {status_text}**
-
-{status_emoji} **Status:** {'Aprovado e usuário adicionado' if success else 'Aprovado mas erro ao adicionar'}
-👤 **Usuário:** @{user.username or 'username_não_disponível'} (ID: {user.id})
-💰 **Valor:** R$ {amount:.2f}
-🕒 **Data:** {datetime.utcnow().strftime('%d/%m/%Y %H:%M:%S')}
-
-{"🎉 Usuário tem acesso ao grupo VIP!" if success else "⚠️  Verificar manualmente o acesso do usuário."}"""
+            # Calcula valor líquido (assumindo 10% de taxa)
+            net_value = amount * 0.9
+            
+            # Calcula tempo de conversão (placeholder por enquanto)
+            conversion_time = "0d 0h 2m 37s"  # TODO: Implementar cálculo real
+            
+            # Determina categoria do plano
+            plan_category = self._get_plan_category(plan_name)
+            
+            # Código de venda (placeholder por enquanto) 
+            sale_code = "direct_access"  # TODO: Capturar do parâmetro start
+            
+            # Monta a notificação melhorada
+            log_message = f"""🎉 Pagamento Aprovado!
+🤖 Bot: @{bot_config.bot_username if bot_config else 'bot_desconhecido'}
+⚙️ ID Bot: {bot_config.id if bot_config else 'N/A'}
+🆔 ID Cliente: {user.id}
+🔗 Username: @{user.username or 'sem_username'}
+👤 Nome de Perfil: {user.first_name} {user.last_name or ''}
+👤 Nome Completo: {user_info.get('full_name', 'N/A')}
+💳 CPF: {user_info.get('cpf_masked', 'N/A')}
+📦 Categoria: {plan_category}
+🎁 Plano: {plan_name} 💎
+📅 Duração: {plan_duration.title() if plan_duration else 'N/A'}
+💰 Valor: R${amount:.2f}
+� Valor Líquido: R${net_value:.2f}
+⏳ Tempo Conversão: {conversion_time}
+🔖 Código de Venda: {sale_code}
+🔑 ID Transação: {payment.pix_code if payment else 'N/A'}
+🏷️ ID Gateway: {user_info.get('gateway_id', 'N/A')}
+💱 Moeda: BRL
+💳 Método: PIX
+🏦 Plataforma: PushinPay"""
             
             await bot.send_message(
                 chat_id=log_group_id,
                 text=log_message
             )
             
-            logger.info(f"📝 Notificação enviada para grupo de logs")
+            logger.info(f"📝 Notificação melhorada enviada para grupo de logs")
             
         except Exception as e:
             logger.error(f"❌ Erro ao enviar notificação para logs: {e}")
+    
+    def _get_plan_category(self, plan_name: str) -> str:
+        """Determina a categoria do plano baseado no nome"""
+        plan_name_lower = plan_name.lower()
+        
+        if 'downsell' in plan_name_lower or 'desconto' in plan_name_lower:
+            return "Plano Downsell"
+        elif 'upsell' in plan_name_lower or 'premium' in plan_name_lower or 'vip' in plan_name_lower:
+            return "Plano Premium"
+        elif 'mailing' in plan_name_lower or 'email' in plan_name_lower:
+            return "Plano Mailing"
+        elif 'pacote' in plan_name_lower or 'bundle' in plan_name_lower:
+            return "Plano Pacotes"
+        else:
+            return "Plano Normal"
+    
+    async def _get_enhanced_user_info(self, bot, user) -> dict:
+        """Busca informações aprimoradas do usuário"""
+        try:
+            # Informações básicas do Telegram
+            chat_member = await bot.get_chat_member(user.id, user.id)
+            telegram_user = chat_member.user
+            
+            # TODO: Integrar com dados do PushinPay para obter CPF e nome completo
+            return {
+                'full_name': f"{telegram_user.first_name} {telegram_user.last_name or ''}".strip(),
+                'cpf_masked': 'N/A',  # TODO: Obter do PushinPay
+                'gateway_id': 'N/A',  # TODO: Obter do PushinPay
+                'is_premium': getattr(telegram_user, 'is_premium', False),
+                'language_code': getattr(telegram_user, 'language_code', 'pt-br')
+            }
+        except Exception as e:
+            logger.error(f"Erro ao buscar info aprimorada do usuário {user.id}: {e}")
+            return {
+                'full_name': f"{user.first_name} {user.last_name or ''}".strip(),
+                'cpf_masked': 'N/A',
+                'gateway_id': 'N/A',
+                'is_premium': False,
+                'language_code': 'pt-br'
+            }
             
     
     async def _get_user_info(self, bot, user_id: int) -> dict:

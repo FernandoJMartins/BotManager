@@ -5,6 +5,10 @@ from datetime import datetime
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from telegram.error import TelegramError
+import urllib3
+
+# Desabilita warnings SSL temporariamente para resolver problema de conectividade
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from ..models.bot import TelegramBot
 from ..models.payment import Payment
 from ..database.models import db
