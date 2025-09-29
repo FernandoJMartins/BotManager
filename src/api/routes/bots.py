@@ -296,37 +296,58 @@ def create_bot():
             bot.is_active = True
             db.session.commit()
 
-            # Inicia o bot Telegram automaticamente
+            # Inicia o bot Telegram automaticamente e marca como rodando
             from ...services.telegram_bot_manager import bot_manager
             import asyncio
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(f"🚀 Iniciando bot {bot.bot_name} automaticamente...")
 
             def start_bot_async():
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(bot_manager.start_bot(bot))
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    success = loop.run_until_complete(bot_manager.start_bot(bot))
+                    
+                    if success:
+                        # Marca o bot como rodando no banco de dados
+                        bot.is_running = True
+                        bot.last_activity = datetime.utcnow()
+                        db.session.commit()
+                        logger.info(f"✅ Bot {bot.bot_name} iniciado e rodando com sucesso!")
+                    else:
+                        logger.error(f"❌ Falha ao iniciar bot {bot.bot_name}")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Erro ao iniciar bot {bot.bot_name}: {e}")
 
             import threading
             bot_thread = threading.Thread(target=start_bot_async, daemon=True)
             bot_thread.start()
+            
+            # Pequeno delay para dar tempo do bot iniciar
+            import time
+            time.sleep(2)
 
             if request.is_json:
                 return jsonify({
                     'success': True,
                     'bot_id': bot.id,
-                    'message': 'Bot criado e ativado com sucesso!'
+                    'message': 'Bot criado e está sendo iniciado automaticamente! 🚀'
                 }), 201
 
-            flash('Bot criado e ativado com sucesso!', 'success')
-            return redirect(url_for('dashboard'))
+            flash('Bot criado com sucesso e está sendo iniciado automaticamente! 🚀', 'success')
+            return redirect(url_for('bots.list_bots'))
 
         except Exception as e:
             db.session.rollback()
             if request.is_json:
                 return jsonify({'error': f'Erro ao criar bot: {str(e)}'}), 500
             flash(f'Erro ao criar bot: {str(e)}', 'error')
-            return render_template('bots/create_new.html')
+            return render_template('bots/create.html')
 
-    return render_template('bots/create_new.html')
+    return render_template('bots/create.html')
 
 
 @bots_bp.route('/payment/<int:bot_id>', methods=['GET'])

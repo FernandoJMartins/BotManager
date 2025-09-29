@@ -145,19 +145,6 @@ endblock %} {% block head %}
 <div class="bots-header">
   <div class="container">
     <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="mb-2">
-          <i class="fas fa-robot me-3"></i>
-          Meus Bots
-        </h1>
-        <p class="mb-0 opacity-75">
-          Gerencie todos os seus bots do Telegram {% if bots %}
-          <span class="badge bg-light text-dark ms-2 px-3 py-2">
-            {{ bots|length }} bot{{ 's' if bots|length != 1 else '' }}
-          </span>
-          {% endif %}
-        </p>
-      </div>
       <div class="d-flex gap-2">
         {% if can_add_more %}
         <a href="{{ url_for('bots.create_bot') }}" class="btn btn-light btn-lg">

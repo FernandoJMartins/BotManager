@@ -33,8 +33,13 @@ class TelegramValidationService:
         # TODO: Aqui poderia ser feita uma validação real com a API do Telegram
         # Por enquanto, aceita qualquer token com formato básico válido
         
+        # Extrai o bot_id do token para gerar um username genérico
+        bot_id = token.split(':')[0]
+        
         return {
             'valid': True,
+            'username': f'bot_{bot_id}',
+            'first_name': f'Bot {bot_id}',
             'bot_info': {
                 'token': token
             }
