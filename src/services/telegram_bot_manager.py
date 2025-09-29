@@ -190,7 +190,7 @@ class TelegramBotManager:
                     callback_data = f"pix_{value}_{bot_config.id}_{i}"
                     keyboard.append([
                         InlineKeyboardButton(
-                            f"🌟 {plan_name} - R$ {value:.2f}",
+                            f"{plan_name} - R$ {value:.2f}",
                             callback_data=callback_data
                         )
                     ])
@@ -211,55 +211,59 @@ class TelegramBotManager:
             
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Envia mídias iniciais na sequência correta
+            # Envia mídias iniciais na sequência correta APENAS se ambos os grupos estiverem configurados
+            can_send_media = bot_config.has_vip_group() and bot_config.has_log_group()
             
-            # 1. Primeiro envia a imagem inicial se existir (via file_id ou caminho local)
-            if bot_config.welcome_image_file_id:
-                try:
-                    await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
-                    logger.info(f"✅ Imagem inicial enviada via file_id")
-                except Exception as img_error:
-                    logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
-                    # Fallback para arquivo local se existir
-                    if bot_config.welcome_image:
-                        try:
-                            with open(bot_config.welcome_image, 'rb') as img_file:
-                                await update.message.reply_photo(photo=img_file)
-                            logger.info(f"✅ Imagem inicial enviada via arquivo local")
-                        except Exception as local_img_error:
-                            logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
-            elif bot_config.welcome_image:
-                # Se não tem file_id mas tem arquivo local
-                try:
-                    with open(bot_config.welcome_image, 'rb') as img_file:
-                        await update.message.reply_photo(photo=img_file)
-                    logger.info(f"✅ Imagem inicial enviada via arquivo local")
-                except Exception as local_img_error:
-                    logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
-            
-            # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
-            if bot_config.welcome_audio_file_id:
-                try:
-                    await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
-                    logger.info(f"✅ Áudio inicial enviado via file_id")
-                except Exception as audio_error:
-                    logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
-                    # Fallback para arquivo local se existir
-                    if bot_config.welcome_audio:
-                        try:
-                            with open(bot_config.welcome_audio, 'rb') as audio_file:
-                                await update.message.reply_audio(audio=audio_file)
-                            logger.info(f"✅ Áudio inicial enviado via arquivo local")
-                        except Exception as local_audio_error:
-                            logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
-            elif bot_config.welcome_audio:
-                # Se não tem file_id mas tem arquivo local
-                try:
-                    with open(bot_config.welcome_audio, 'rb') as audio_file:
-                        await update.message.reply_audio(audio=audio_file)
-                    logger.info(f"✅ Áudio inicial enviado via arquivo local")
-                except Exception as local_audio_error:
-                    logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+            if can_send_media:
+                # 1. Primeiro envia a imagem inicial se existir (via file_id ou caminho local)
+                if bot_config.welcome_image_file_id:
+                    try:
+                        await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
+                        logger.info(f"✅ Imagem inicial enviada via file_id")
+                    except Exception as img_error:
+                        logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
+                        # Fallback para arquivo local se existir
+                        if bot_config.welcome_image:
+                            try:
+                                with open(bot_config.welcome_image, 'rb') as img_file:
+                                    await update.message.reply_photo(photo=img_file)
+                                logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                            except Exception as local_img_error:
+                                logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+                elif bot_config.welcome_image:
+                    # Se não tem file_id mas tem arquivo local
+                    try:
+                        with open(bot_config.welcome_image, 'rb') as img_file:
+                            await update.message.reply_photo(photo=img_file)
+                        logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                    except Exception as local_img_error:
+                        logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+                
+                # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
+                if bot_config.welcome_audio_file_id:
+                    try:
+                        await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
+                        logger.info(f"✅ Áudio inicial enviado via file_id")
+                    except Exception as audio_error:
+                        logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
+                        # Fallback para arquivo local se existir
+                        if bot_config.welcome_audio:
+                            try:
+                                with open(bot_config.welcome_audio, 'rb') as audio_file:
+                                    await update.message.reply_audio(audio=audio_file)
+                                logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                            except Exception as local_audio_error:
+                                logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+                elif bot_config.welcome_audio:
+                    # Se não tem file_id mas tem arquivo local
+                    try:
+                        with open(bot_config.welcome_audio, 'rb') as audio_file:
+                            await update.message.reply_audio(audio=audio_file)
+                        logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                    except Exception as local_audio_error:
+                        logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+            else:
+                logger.info(f"⚠️ Mídia não enviada - Grupos VIP e/ou Notificações não configurados para bot {bot_config.bot_username}")
             
             # 3. Por último envia a mensagem de boas-vindas com os botões
             await update.message.reply_text(

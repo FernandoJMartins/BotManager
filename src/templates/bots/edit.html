@@ -111,7 +111,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
 </div>
 
 <div class="container">
-  <div class="card bot-edit-card animate-fade-in">
+  <div class="card bot-edit-card ">
     <div class="card-body p-4">
       <form method="POST" enctype="multipart/form-data">
         <!-- Seção: Informações Básicas -->
@@ -119,7 +119,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
           <!-- Nome do Bot - Largura Total -->
           <div class="mb-3">
             <label for="name" class="form-label fw-bold">
-              <i class="fas fa-tag me-1"></i>Nome do Bot
+              <i class="fas fa-tag me-1"></i>Nome
             </label>
             <input
               type="text"
@@ -137,7 +137,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
           <!-- Token do Bot -->
           <div class="mb-3">
             <label for="token" class="form-label fw-bold">
-              <i class="fas fa-key me-1"></i>Token do Bot
+              <i class="fas fa-key me-1"></i>Token
             </label>
             <input
               type="text"
@@ -241,11 +241,14 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
           <!-- Cabeçalho dos campos (apenas uma vez) -->
           <div class="row mb-1 mt-3">
-            <div class="col-md-5">
-              <label class="form-label fw-bold"> Nome do Plano </label>
+            <div class="col-md-4">
+              <label class="form-label fw-bold"> Nome </label>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
               <label class="form-label fw-bold"> Valor (R$) </label>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold"> Duração </label>
             </div>
             <div class="col-md-2">
               <label class="form-label fw-bold">Excluir</label>
@@ -253,13 +256,15 @@ Telegram Bot Manager{% endblock %} {% block head %}
           </div>
 
           <div id="plans-container">
-            {% set current_values = bot.get_pix_values() %} {% set current_names
-            = bot.get_plan_names() %} {# Mostra apenas os valores/nomes que
-            realmente existem #} {% set max_items = [current_values|length,
-            current_names|length, 1]|max %} {% for i in range(max_items) %}
+            {% set current_values = bot.get_pix_values() %} 
+            {% set current_names = bot.get_plan_names() %} 
+            {% set current_durations = bot.get_plan_durations() if bot.get_plan_durations else [] %}
+            {# Mostra apenas os valores/nomes que realmente existem #} 
+            {% set max_items = [current_values|length, current_names|length, current_durations|length, 1]|max %} 
+            {% for i in range(max_items) %}
             <div class="value-input-group">
               <div class="row align-items-center">
-                <div class="col-md-5">
+                <div class="col-md-4">
                   <input
                     type="text"
                     class="form-control"
@@ -269,7 +274,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
                     maxlength="50"
                   />
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-3">
                   <input
                     type="number"
                     class="form-control"
@@ -279,6 +284,18 @@ Telegram Bot Manager{% endblock %} {% block head %}
                     step="1.00"
                     min="1"
                   />
+                </div>
+                <div class="col-md-3">
+                  <select class="form-select" name="plan_duration[]">
+                    <option value="">Selecione...</option>
+                    <option value="semanal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'semanal' else '' }}>Semanal</option>
+                    <option value="quinzenal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'quinzenal' else '' }}>Quinzenal</option>
+                    <option value="mensal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'mensal' else '' }}>Mensal</option>
+                    <option value="trimestral" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'trimestral' else '' }}>Trimestral</option>
+                    <option value="semestral" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'semestral' else '' }}>Semestral</option>
+                    <option value="anual" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'anual' else '' }}>Anual</option>
+                    <option value="vitalicio" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'vitalicio' else '' }}>Vitalício</option>
+                  </select>
                 </div>
                 <div class="col-md-2">
                   {% if max_items > 1 %}
@@ -456,7 +473,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
 
     newPlan.innerHTML = `
     <div class="row align-items-center">
-      <div class="col-md-5">
+      <div class="col-md-4">
         <input
           type="text"
           class="form-control"
@@ -465,7 +482,7 @@ Telegram Bot Manager{% endblock %} {% block head %}
           maxlength="50"
         />
       </div>
-      <div class="col-md-5">
+      <div class="col-md-3">
         <input
           type="number"
           class="form-control"
@@ -474,6 +491,18 @@ Telegram Bot Manager{% endblock %} {% block head %}
           step="1.00"
           min="1"
         />
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" name="plan_duration[]">
+          <option value="">Selecione...</option>
+          <option value="semanal">Semanal</option>
+          <option value="quinzenal">Quinzenal</option>
+          <option value="mensal">Mensal</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option>
+          <option value="anual">Anual</option>
+          <option value="vitalicio">Vitalício</option>
+        </select>
       </div>
       <div class="col-md-2">
         <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePlan(this)">

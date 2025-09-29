@@ -101,8 +101,32 @@ def create_bot():
         if not pix_values:
             pix_values = [10.0, 20.0, 50.0]
         
+        # Processa nomes dos planos
+        plan_names_raw = request.form.getlist('plan_names[]') if not request.is_json else data.get('plan_names', [])
+        plan_names = []
+        for name in plan_names_raw:
+            if name and name.strip():
+                plan_names.append(name.strip())
+        
+        # Se não tem nomes, usa padrões
+        if not plan_names:
+            plan_names = ["Básico", "Premium", "VIP"]
+        
+        # Processa durações dos planos
+        plan_durations_raw = request.form.getlist('plan_duration[]') if not request.is_json else data.get('plan_duration', [])
+        plan_durations = []
+        for duration in plan_durations_raw:
+            if duration and duration.strip():
+                plan_durations.append(duration.strip())
+        
+        # Se não tem durações, usa padrões
+        if not plan_durations:
+            plan_durations = ["mensal", "mensal", "mensal"]
+        
         import json
         pix_values_json = json.dumps(pix_values)
+        plan_names_json = json.dumps(plan_names)
+        plan_durations_json = json.dumps(plan_durations)
         
         if not token:
             if request.is_json:
@@ -135,6 +159,25 @@ def create_bot():
             flash(f'Token inválido: {validation_result["error"]}', 'error')
             return render_template('bots/create.html')
         
+        # Processa IDs dos grupos
+        id_vip = data.get('id_vip', '').strip() if request.is_json else request.form.get('id_vip', '').strip()
+        id_logs = data.get('id_logs', '').strip() if request.is_json else request.form.get('id_logs', '').strip()
+        
+        # Formata IDs dos grupos se fornecidos
+        if id_vip:
+            id_vip = id_vip.replace('@', '').replace('https://t.me/', '')
+            if not id_vip.startswith('-'):
+                id_vip = '-' + id_vip
+        else:
+            id_vip = None
+            
+        if id_logs:
+            id_logs = id_logs.replace('@', '').replace('https://t.me/', '')
+            if not id_logs.startswith('-'):
+                id_logs = '-' + id_logs
+        else:
+            id_logs = None
+
         try:
             # Cria o bot
             bot = TelegramBot(
@@ -143,6 +186,10 @@ def create_bot():
                 bot_name=name or validation_result['first_name'],
                 welcome_message=welcome_message,
                 pix_values=pix_values_json,
+                plan_names=plan_names_json,
+                plan_duration=plan_durations_json,
+                id_vip=id_vip,
+                id_logs=id_logs,
                 user_id=current_user.id,
                 is_active=True  # Ativo imediatamente
             )
@@ -360,9 +407,10 @@ def edit_bot(slug):
             bot.bot_token = request.form.get('token', '').strip()
             bot.welcome_message = request.form.get('welcome_message', '').strip()
             
-            # Atualiza valores PIX e nomes dos planos
+            # Atualiza valores PIX, nomes dos planos e durações
             pix_values = []
             plan_names = []
+            plan_durations = []
             
             for value in request.form.getlist('pix_values[]'):
                 if value and float(value) > 0:
@@ -372,8 +420,13 @@ def edit_bot(slug):
                 if name and name.strip():
                     plan_names.append(name.strip())
             
+            for duration in request.form.getlist('plan_duration[]'):
+                if duration and duration.strip():
+                    plan_durations.append(duration.strip())
+            
             bot.pix_values = pix_values
             bot.plan_names = plan_names
+            bot.plan_duration = plan_durations
             
             # Atualiza IDs dos grupos
             id_vip = request.form.get('id_vip', '').strip()

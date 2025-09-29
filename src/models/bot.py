@@ -26,6 +26,8 @@ class TelegramBot(db.Model):
     
     pix_values = db.Column(db.JSON, nullable=True, default='[]')  # Lista de valores para PIX [10.0, 20.0, 50.0]
     plan_names = db.Column(db.JSON, nullable=True, default='[]')  # Lista de nomes dos planos ["VIP SEMANAL", "PREMIUM MENSAL"]
+    plan_duration = db.Column(db.JSON, nullable =True, default='[]')
+
     id_vip = db.Column(db.String(255))
     id_logs = db.Column(db.String(255))
 
@@ -80,6 +82,16 @@ class TelegramBot(db.Model):
                 import json
                 return json.loads(self.plan_names)
             return self.plan_names or []
+        except:
+            return []
+    
+    def get_plan_durations(self) -> list:
+        """Retorna lista de durações dos planos configurados"""
+        try:
+            if isinstance(self.plan_duration, str):
+                import json
+                return json.loads(self.plan_duration)
+            return self.plan_duration or []
         except:
             return []
     
