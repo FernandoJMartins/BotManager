@@ -470,43 +470,59 @@ class TelegramBotManager:
             qr_code_data = pix_data.get('qr_code', '')
             
             if qr_code_data and qr_code_data.startswith('data:image/'):
-                try:
-                    # Remove o prefixo data:image/png;base64, para obter apenas o base64
-                    import base64
-                    from io import BytesIO
-                    from PIL import Image, ImageOps
-                    
-                    base64_data = qr_code_data.split(',')[1] if ',' in qr_code_data else qr_code_data
-                    image_data = base64.b64decode(base64_data)
-                    
-                    # Abre a imagem original
-                    original_image = Image.open(BytesIO(image_data))
-                    
-                    # Adiciona padding branco ao redor do QR Code
-                    padding = 20  # 20 pixels de padding
-                    padded_image = ImageOps.expand(original_image, border=padding, fill='white')
-                    
-                    # Converte a imagem modificada de volta para bytes
-                    output_buffer = BytesIO()
-                    padded_image.save(output_buffer, format='PNG')
-                    output_buffer.seek(0)
-                    
-                    # Envia nova mensagem com QR Code
-                    await context.bot.send_photo(
-                        chat_id=user.id,
-                        photo=output_buffer,
-                        caption=pix_message,
-                        reply_markup=reply_markup
-                    )
-                    
-                except Exception as img_error:
-                    logger.error(f"Erro ao enviar QR Code como imagem: {img_error}")
-                    # Se falhar, envia só o texto
+                qr_sent_successfully = False
+                
+                # Tenta enviar QR Code com retry
+                for attempt in range(2):  # Máximo 2 tentativas
+                    try:
+                        # Remove o prefixo data:image/png;base64, para obter apenas o base64
+                        import base64
+                        from io import BytesIO
+                        from PIL import Image, ImageOps
+                        
+                        base64_data = qr_code_data.split(',')[1] if ',' in qr_code_data else qr_code_data
+                        image_data = base64.b64decode(base64_data)
+                        
+                        # Abre a imagem original
+                        original_image = Image.open(BytesIO(image_data))
+                        
+                        # Adiciona padding branco ao redor do QR Code
+                        padding = 20  # 20 pixels de padding
+                        padded_image = ImageOps.expand(original_image, border=padding, fill='white')
+                        
+                        # Converte a imagem modificada de volta para bytes
+                        output_buffer = BytesIO()
+                        padded_image.save(output_buffer, format='PNG')
+                        output_buffer.seek(0)
+                        
+                        # Envia nova mensagem com QR Code com timeout aumentado
+                        await context.bot.send_photo(
+                            chat_id=user.id,
+                            photo=output_buffer,
+                            caption=pix_message,
+                            reply_markup=reply_markup,
+                            read_timeout=30,
+                            write_timeout=30,
+                            connect_timeout=30
+                        )
+                        
+                        qr_sent_successfully = True
+                        logger.info(f"✅ QR Code enviado com sucesso na tentativa {attempt + 1}")
+                        break
+                        
+                    except Exception as img_error:
+                        logger.warning(f"⚠️ Tentativa {attempt + 1} falhou ao enviar QR Code: {img_error}")
+                        if attempt == 1:  # Última tentativa
+                            logger.error(f"❌ Falha definitiva ao enviar QR Code após 2 tentativas: {img_error}")
+                
+                # Se não conseguiu enviar o QR Code, envia só o texto
+                if not qr_sent_successfully:
                     await context.bot.send_message(
                         chat_id=user.id,
                         text=pix_message,
                         reply_markup=reply_markup
                     )
+                    logger.info("📝 Enviado PIX como texto (sem QR Code)")
             else:
                 # Se não tem QR Code válido, envia só o texto
                 await context.bot.send_message(

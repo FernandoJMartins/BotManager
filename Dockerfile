@@ -19,4 +19,4 @@ COPY .env.example .env
 EXPOSE 5000
 
 # Command to run the application
-CMD ["python", "src/app.py"]
+CMD ["python", "-m", "src.app"]
