@@ -109,7 +109,7 @@ endblock %} {% block content %}
       <div class="chart-legend">
         <span class="legend-item">
           <span class="legend-dot purple"></span>
-          Faturamento Líquido
+          Faturamento Total
         </span>
         <span class="chart-period"
           >{{ period_label|default('Últimos 30 dias') }}</span
@@ -140,14 +140,9 @@ endblock %} {% block content %}
 {% endblock %}
 
 <!-- Data for Charts -->
+<!-- Debug: chart_data = {{ chart_data }} -->
 <script type="application/json" id="chartData">
-  {
-      "revenue_labels": {% if chart_data %}{{ chart_data.revenue_labels|tojson|safe }}{% else %}[]{% endif %},
-      "revenue_data": {% if chart_data %}{{ chart_data.revenue_data|tojson|safe }}{% else %}[]{% endif %},
-      "fees_data": {% if chart_data %}{{ chart_data.fees_data|tojson|safe }}{% else %}[]{% endif %},
-      "sessions_labels": {% if chart_data %}{{ chart_data.sessions_labels|tojson|safe }}{% else %}[]{% endif %},
-      "sessions_data": {% if chart_data %}{{ chart_data.sessions_data|tojson|safe }}{% else %}[]{% endif %}
-  }
+  {{ chart_data|tojson|safe if chart_data else '{}' }}
 </script>
 
 {% block scripts %}
@@ -172,87 +167,116 @@ endblock %} {% block content %}
     ? JSON.parse(chartDataElement.textContent)
     : {};
 
+  // Debug: Log chart data
+  console.log("Chart Data:", chartData);
+  console.log("Revenue Labels:", chartData.revenue_labels);
+  console.log("Revenue Data:", chartData.revenue_data);
+
   // Verificar se Chart.js está disponível
   if (typeof Chart !== "undefined") {
+    console.log("Chart.js is available");
+    
     // Revenue Chart
     const revenueCanvas = document.getElementById("revenueChart");
     if (revenueCanvas) {
+      console.log("Revenue canvas found");
       const revenueCtx = revenueCanvas.getContext("2d");
       const revenueLabels = chartData.revenue_labels || [];
       const revenueData = chartData.revenue_data || [];
       const feesData = chartData.fees_data || [];
 
-      new Chart(revenueCtx, {
-        type: "line",
-        data: {
-          labels: revenueLabels,
-          datasets: [
-            {
-              label: "Faturamento Líquido",
-              data: revenueData,
-              borderColor: "#8b5cf6",
-              backgroundColor: "rgba(139, 92, 246, 0.15)",
-              fill: "origin",
-              tension: 0.4,
-              borderWidth: 3,
-              pointBackgroundColor: "#8b5cf6",
-              pointBorderColor: "#ffffff",
-              pointBorderWidth: 2,
-              pointRadius: 5,
-              pointHoverRadius: 7,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
-          plugins: {
-            legend: {
-              display: false,
-            },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: '#ffffff',
-              bodyColor: '#ffffff',
-              borderColor: '#8b5cf6',
-              borderWidth: 1,
-            },
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: "rgba(255, 255, 255, 0.1)",
-                drawBorder: false,
+      console.log("Creating chart with labels:", revenueLabels);
+      console.log("Creating chart with data:", revenueData);
+
+      try {
+        const revenueChart = new Chart(revenueCtx, {
+          type: "line",
+          data: {
+            labels: revenueLabels,
+            datasets: [
+              {
+                label: "Faturamento Líquido",
+                data: revenueData,
+                borderColor: "#8b5cf6",
+                backgroundColor: "rgba(139, 92, 246, 0.1)",
+                fill: false,
+                tension: 0.4,
+                borderWidth: 2,
+                pointBackgroundColor: "#8b5cf6",
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
               },
-              ticks: {
-                color: "#9ca3af",
-                padding: 10,
-                callback: function (value) {
-                  return "R$ " + value.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  });
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  color: '#9ca3af',
+                  font: {
+                    size: 12
+                  }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#ffffff',
+                bodyColor: '#ffffff',
+                borderColor: '#8b5cf6',
+                borderWidth: 1,
+                callbacks: {
+                  label: function(context) {
+                    return 'Faturamento: R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    });
+                  }
+                }
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: "rgba(255, 255, 255, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#9ca3af",
+                  padding: 10,
+                  callback: function (value) {
+                    return "R$ " + value.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    });
+                  },
+                },
+              },
+              x: {
+                grid: {
+                  color: "rgba(255, 255, 255, 0.05)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#9ca3af",
+                  padding: 10,
                 },
               },
             },
-            x: {
-              grid: {
-                color: "rgba(255, 255, 255, 0.05)",
-                drawBorder: false,
-              },
-              ticks: {
-                color: "#9ca3af",
-                padding: 10,
-              },
-            },
           },
-        },
-      });
+        });
+        console.log("Chart created successfully:", revenueChart);
+      } catch (error) {
+        console.error("Error creating chart:", error);
+      }
+    } else {
+      console.log("Revenue canvas not found");
     }
 
     // Sessions Chart

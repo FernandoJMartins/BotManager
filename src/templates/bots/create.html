@@ -1,116 +1,35 @@
-{% extends "base.html" %} {% block title %}Criar Bot - Telegram Bot Manager {%
-endblock %} {% block head %}
-
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-  rel="stylesheet"
-/>
-<style>
-  .page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0 0 20px 20px;
-  }
-
-  .bot-edit-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    background: white;
-  }
-
-  .section-header {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    padding: 1rem 1.5rem;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
-    border-radius: 15px 15px 0 0;
-  }
-
-  .form-section {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-left: 4px solid #667eea;
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-  }
-
-  .btn {
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .btn:hover {
-    transform: translateY(-2px);
-  }
-
-  .group-id-input {
-    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-    font-size: 0.9rem;
-  }
-
-  .info-card {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-    border: none;
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-  .value-input-group {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid #dee2e6;
-  }
-</style>
-
-{%endblock %} {% block content %}
-
-<div class="page-header">
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="mb-2">
-          <i class="fas fa-edit me-3"></i>
-          Criar Novo Bot
-        </h1>
-      </div>
-    </div>
+{% extends "base_dark.html" %} {% block title %}Criar Novo Bot - BotManager{%
+endblock %} {% block content %}
+<!-- Dashboard Header -->
+<header class="dashboard-header">
+  <div class="header-left">
+    <h1>
+      <i class="fas fa-robot me-3"></i>
+      Criar Novo Bot
+    </h1>
+    <p>Configure seu bot Telegram para vendas automatizadas</p>
   </div>
-</div>
+</header>
 
-<div class="container">
-  <div class="card bot-edit-card">
-    <div class="card-body p-4">
-      <form method="POST" enctype="multipart/form-data">
-        <!-- Informações Básicas -->
+<!-- Create Bot Form -->
+<div class="form-container">
+  <div class="stat-card">
+    <form method="POST" enctype="multipart/form-data" class="bot-form">
+      <!-- Informações Básicas -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-info-circle me-2"></i>
+          Informações Básicas
+        </h3>
 
-        <div class="mb-3">
-          <label for="name" class="form-label fw-bold">
-            <i class="fas fa-tag me-1"></i>
-            Nome
+        <div class="form-group">
+          <label for="name" class="form-label">
+            <i class="fas fa-tag me-2"></i>
+            Nome do Bot
           </label>
           <input
             type="text"
-            class="form-control w-100"
+            class="form-input"
             id="name"
             name="name"
             required
@@ -118,325 +37,338 @@ endblock %} {% block head %}
             maxlength="100"
             placeholder="Ex: Meu Bot de Vendas"
           />
+          <small class="form-hint"
+            >Nome que identificará seu bot no sistema</small
+          >
         </div>
 
-        <div class="mb-3">
-          <label for="name" class="form-label fw-bold">
-            <i class="fas fa-key me-1"></i>
+        <div class="form-group">
+          <label for="token" class="form-label">
+            <i class="fas fa-key me-2"></i>
             Token do Bot
           </label>
           <input
             type="text"
-            class="form-control w-100"
+            class="form-input"
             id="token"
             name="token"
             required
             placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
           />
-          <small class="form-text text-muted">
-            Token obtido do @BotFather no Telegram (⚠️ Alterar reiniciará o bot)
+          <small class="form-hint">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Token obtido do @BotFather no Telegram (alterar reiniciará o bot)
           </small>
         </div>
+      </div>
 
-        <!-- Mensagem de Boas-vindas -->
-        <div class="mb-4">
-          <label for="welcome_message" class="form-label fw-bold">
-            <i class="fas fa-comment me-1"></i>
-            Mensagem de Boas-vindas
+      <!-- Mensagem de Boas-vindas -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-comment me-2"></i>
+          Mensagem de Boas-vindas
+        </h3>
+
+        <div class="form-group">
+          <label for="welcome_message" class="form-label">
+            Mensagem personalizada
           </label>
           <textarea
-            class="form-control"
+            class="form-textarea"
             id="welcome_message"
             name="welcome_message"
-            rows="8"
-            style="
-              min-height: 100px;
-              font-size: 14px;
-              line-height: 1.4;
-              padding: 8px 12px;
-            "
+            rows="6"
             placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
           ></textarea>
+          <small class="form-hint"
+            >Mensagem que será enviada quando usuários iniciarem conversa com
+            /start</small
+          >
         </div>
+      </div>
 
-        <!-- Mídia de Boas-vindas -->
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="welcome_image" class="form-label fw-bold">
-                <i class="fas fa-image me-1"></i>
-                Imagem de Boas-vindas (opcional)
-              </label>
+      <!-- Mídia de Boas-vindas -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-photo-video me-2"></i>
+          Mídia de Boas-vindas (Opcional)
+        </h3>
+
+        <div class="media-grid">
+          <div class="form-group">
+            <label for="welcome_image" class="form-label">
+              <i class="fas fa-image me-2"></i>
+              Imagem de Boas-vindas
+            </label>
+            <div class="file-input-wrapper">
               <input
                 type="file"
-                class="form-control"
+                class="form-file"
                 id="welcome_image"
                 name="welcome_image"
                 accept="image/*"
               />
-              <small class="form-text text-muted">
-                Imagem que será enviada junto com a mensagem de boas-vindas
-              </small>
+              <label for="welcome_image" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                Escolher imagem
+              </label>
             </div>
+            <small class="form-hint"
+              >Imagem que será enviada junto com a mensagem de
+              boas-vindas</small
+            >
           </div>
 
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="welcome_audio" class="form-label fw-bold">
-                <i class="fas fa-volume-up me-1"></i>
-                Áudio de Boas-vindas (opcional)
-              </label>
+          <div class="form-group">
+            <label for="welcome_audio" class="form-label">
+              <i class="fas fa-volume-up me-2"></i>
+              Áudio de Boas-vindas
+            </label>
+            <div class="file-input-wrapper">
               <input
                 type="file"
-                class="form-control"
+                class="form-file"
                 id="welcome_audio"
                 name="welcome_audio"
                 accept="audio/*"
               />
-              <small class="form-text text-muted">
-                Áudio que será enviado junto com a mensagem (se não houver
-                imagem)
-              </small>
+              <label for="welcome_audio" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                Escolher áudio
+              </label>
             </div>
+            <small class="form-hint"
+              >Áudio que será enviado junto com a mensagem (se não houver
+              imagem)</small
+            >
           </div>
         </div>
+      </div>
 
-        <!-- Planos e Configurações -->
-        <div class="mb-4">
-          <label class="form-label fw-bold">
-            <i class="fas fa-money-bill-wave me-1"></i>
-            Planos e Configurações <span class="text-danger">*</span>
-          </label>
-          <div class="card bg-light">
-            <div class="card-body">
-              <div class="row mb-2">
-                <div class="col-md-4"><strong>Nome</strong></div>
-                <div class="col-md-3"><strong>Valor</strong></div>
-                <div class="col-md-3"><strong>Duração</strong></div>
-                <div class="col-md-2"><strong>Excluir</strong></div>
-              </div>
-              <div id="plans-container">
-                <div class="value-input-group">
-                  <div class="row align-items-center">
-                    <div class="col-md-4">
-                      <input
-                        type="text"
-                        class="form-control"
-                        name="plan_names[]"
-                        placeholder="Plano Básico"
-                        maxlength="50"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <input
-                        type="number"
-                        class="form-control"
-                        name="pix_values[]"
-                        placeholder="10.00"
-                        step="1.00"
-                        min="1"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <select class="form-select" name="plan_duration[]">
-                        <option value="mensal" selected>Mensal</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="quinzenal">Quinzenal</option>
-                        <option value="trimestral">Trimestral</option>
-                        <option value="semestral">Semestral</option>
-                        <option value="anual">Anual</option>
-                        <option value="vitalicio">Vitalício</option>
-                      </select>
-                    </div>
-                    <div class="col-md-2">
-                      <!-- Removido inicialmente -->
-                    </div>
-                  </div>
-                </div>
-                <div class="value-input-group">
-                  <div class="row align-items-center">
-                    <div class="col-md-4">
-                      <input
-                        type="text"
-                        class="form-control"
-                        name="plan_names[]"
-                        placeholder="Plano Premium"
-                        maxlength="50"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <input
-                        type="number"
-                        class="form-control"
-                        name="pix_values[]"
-                        placeholder="20.00"
-                        step="1.00"
-                        min="1"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <select class="form-select" name="plan_duration[]">
-                        <option value="mensal" selected>Mensal</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="quinzenal">Quinzenal</option>
-                        <option value="trimestral">Trimestral</option>
-                        <option value="semestral">Semestral</option>
-                        <option value="anual">Anual</option>
-                        <option value="vitalicio">Vitalício</option>
-                      </select>
-                    </div>
-                    <div class="col-md-2">
-                      <button
-                        type="button"
-                        class="btn btn-outline-danger btn-sm w-100"
-                        onclick="removePlan(this)"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="value-input-group">
-                  <div class="row align-items-center">
-                    <div class="col-md-4">
-                      <input
-                        type="text"
-                        class="form-control"
-                        name="plan_names[]"
-                        placeholder="Plano VIP"
-                        maxlength="50"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <input
-                        type="number"
-                        class="form-control"
-                        name="pix_values[]"
-                        placeholder="50.00"
-                        step="1.00"
-                        min="1"
-                      />
-                    </div>
-                    <div class="col-md-3">
-                      <select class="form-select" name="plan_duration[]">
-                        <option value="mensal" selected>Mensal</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="quinzenal">Quinzenal</option>
-                        <option value="trimestral">Trimestral</option>
-                        <option value="semestral">Semestral</option>
-                        <option value="anual">Anual</option>
-                        <option value="vitalicio">Vitalício</option>
-                      </select>
-                    </div>
-                    <div class="col-md-2">
-                      <button
-                        type="button"
-                        class="btn btn-outline-danger btn-sm w-100"
-                        onclick="removePlan(this)"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <!-- Planos e Configurações -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-money-bill-wave me-2"></i>
+          Planos e Configurações
+          <span class="required">*</span>
+        </h3>
 
-              <div class="mt-3">
+        <div class="plans-container">
+          <div class="plans-header">
+            <div class="plan-col-name">Nome do Plano</div>
+            <div class="plan-col-value">Valor (R$)</div>
+            <div class="plan-col-duration">Duração</div>
+            <div class="plan-col-actions">Ações</div>
+          </div>
+          <div id="plans-list">
+            <div class="plan-item">
+              <div class="plan-col-name">
+                <input
+                  type="text"
+                  class="form-input"
+                  name="plan_names[]"
+                  placeholder="Plano Básico"
+                  maxlength="50"
+                />
+              </div>
+              <div class="plan-col-value">
+                <input
+                  type="number"
+                  class="form-input"
+                  name="pix_values[]"
+                  placeholder="10.00"
+                  step="1.00"
+                  min="1"
+                />
+              </div>
+              <div class="plan-col-duration">
+                <select class="form-select" name="plan_duration[]">
+                  <option value="mensal" selected>Mensal</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                  <option value="vitalicio">Vitalício</option>
+                </select>
+              </div>
+              <div class="plan-col-actions">
+                <!-- Primeiro plano não tem botão remover -->
+              </div>
+            </div>
+            <div class="plan-item">
+              <div class="plan-col-name">
+                <input
+                  type="text"
+                  class="form-input"
+                  name="plan_names[]"
+                  placeholder="Plano Premium"
+                  maxlength="50"
+                />
+              </div>
+              <div class="plan-col-value">
+                <input
+                  type="number"
+                  class="form-input"
+                  name="pix_values[]"
+                  placeholder="20.00"
+                  step="1.00"
+                  min="1"
+                />
+              </div>
+              <div class="plan-col-duration">
+                <select class="form-select" name="plan_duration[]">
+                  <option value="mensal" selected>Mensal</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                  <option value="vitalicio">Vitalício</option>
+                </select>
+              </div>
+              <div class="plan-col-actions">
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline-primary"
-                  onclick="addPlan()"
+                  class="btn-remove"
+                  onclick="removePlan(this)"
+                  title="Remover plano"
                 >
-                  <i class="fas fa-plus me-1"></i>
-                  Adicionar Plano
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="plan-item">
+              <div class="plan-col-name">
+                <input
+                  type="text"
+                  class="form-input"
+                  name="plan_names[]"
+                  placeholder="Plano VIP"
+                  maxlength="50"
+                />
+              </div>
+              <div class="plan-col-value">
+                <input
+                  type="number"
+                  class="form-input"
+                  name="pix_values[]"
+                  placeholder="50.00"
+                  step="1.00"
+                  min="1"
+                />
+              </div>
+              <div class="plan-col-duration">
+                <select class="form-select" name="plan_duration[]">
+                  <option value="mensal" selected>Mensal</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                  <option value="vitalicio">Vitalício</option>
+                </select>
+              </div>
+              <div class="plan-col-actions">
+                <button
+                  type="button"
+                  class="btn-remove"
+                  onclick="removePlan(this)"
+                  title="Remover plano"
+                >
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </div>
           </div>
+
+          <div class="add-plan-btn">
+            <button type="button" class="btn-secondary" onclick="addPlan()">
+              <i class="fas fa-plus me-2"></i>
+              Adicionar Plano
+            </button>
+          </div>
         </div>
+      </div>
 
-        <!-- Configurações de Grupos -->
-        <div class="mb-4">
-          <label class="form-label fw-bold">
-            <i class="fas fa-users me-1"></i>
-            Configurações de Grupos <span class="text-danger">*</span>
-          </label>
-          <div class="card bg-light">
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_vip" class="form-label fw-bold">
-                      <i class="fas fa-crown me-1"></i>ID do Grupo VIP
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control group-id-input"
-                      id="id_vip"
-                      name="id_vip"
-                      placeholder="-1001234567890"
-                      style="
-                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                        font-size: 0.9rem;
-                      "
-                    />
-                    <small class="form-text text-muted">
-                      Grupo onde os clientes serão adicionados após pagamento
-                      aprovado
-                    </small>
-                  </div>
-                </div>
+      <!-- Configurações de Grupos -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-users me-2"></i>
+          Configurações de Grupos
+          <span class="required">*</span>
+        </h3>
 
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_logs" class="form-label fw-bold">
-                      <i class="fas fa-clipboard-list me-1"></i>ID do Grupo de
-                      Notificações
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control group-id-input"
-                      id="id_logs"
-                      name="id_logs"
-                      placeholder="-1001234567890"
-                      style="
-                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                        font-size: 0.9rem;
-                      "
-                    />
-                    <small class="form-text text-muted">
-                      Grupo onde serão enviadas notificações de pagamentos
-                    </small>
-                  </div>
-                </div>
-              </div>
+        <div class="groups-grid">
+          <div class="form-group">
+            <label for="id_vip" class="form-label">
+              <i class="fas fa-crown me-2"></i>
+              ID do Grupo VIP
+            </label>
+            <input
+              type="text"
+              class="form-input group-id-input"
+              id="id_vip"
+              name="id_vip"
+              placeholder="-1001234567890"
+            />
+            <small class="form-hint">
+              Grupo onde os clientes serão adicionados após pagamento aprovado
+            </small>
+          </div>
 
-              <div class="alert alert-warning">
-                <h6>
-                  <i class="fas fa-lightbulb me-2"></i>Como obter o ID do grupo:
-                </h6>
-                <ol class="mb-0 small">
-                  <li>Pesquise @chat_id_echo_bot no seu telegram</li>
-                  <li>
-                    Digite <code>/start</code> e selecione no grupo ou canal
-                  </li>
-                  <li>O bot retornará o ID do grupo (ex: -1001234567890)</li>
-                </ol>
-              </div>
-
-              <div class="alert alert-info">
-                <strong>💡 Importante:</strong> A imagem e áudio de boas-vindas
-                só serão enviados se ambos os grupos (VIP e Notificações)
-                estiverem configurados.
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="id_logs" class="form-label">
+              <i class="fas fa-clipboard-list me-2"></i>
+              ID do Grupo de Notificações
+            </label>
+            <input
+              type="text"
+              class="form-input group-id-input"
+              id="id_logs"
+              name="id_logs"
+              placeholder="-1001234567890"
+            />
+            <small class="form-hint">
+              Grupo onde serão enviadas notificações de pagamentos
+            </small>
           </div>
         </div>
 
-        <!-- Informações Importantes -->
-        <div class="alert alert-info">
-          <h6><i class="fas fa-info-circle me-2"></i>Como funciona:</h6>
-          <ul class="mb-0">
+        <div class="info-cards">
+          <div class="info-card warning">
+            <div class="info-header">
+              <i class="fas fa-lightbulb me-2"></i>
+              Como obter o ID do grupo
+            </div>
+            <ol class="info-list">
+              <li>Pesquise <code>@chat_id_echo_bot</code> no seu Telegram</li>
+              <li>Digite <code>/start</code> e selecione no grupo ou canal</li>
+              <li>O bot retornará o ID do grupo (ex: -1001234567890)</li>
+            </ol>
+          </div>
+
+          <div class="info-card info">
+            <div class="info-header">
+              <i class="fas fa-info-circle me-2"></i>
+              Importante
+            </div>
+            <p>
+              A imagem e áudio de boas-vindas só serão enviados se ambos os
+              grupos (VIP e Notificações) estiverem configurados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Importantes -->
+      <div class="form-section">
+        <div class="info-card success">
+          <div class="info-header">
+            <i class="fas fa-rocket me-2"></i>
+            Como funciona
+          </div>
+          <ul class="info-list">
             <li>Seu bot ficará ativo 24/7 automaticamente</li>
             <li>
               Qualquer pessoa que enviar /start receberá sua mensagem e botões
@@ -447,7 +379,7 @@ endblock %} {% block head %}
               PushinPay
             </li>
             <li>
-              Você receberá os pagamentos diretamente (menos 5% de comissão da
+              Você receberá os pagamentos diretamente (menos taxas da
               plataforma)
             </li>
             <li>
@@ -456,29 +388,26 @@ endblock %} {% block head %}
             </li>
           </ul>
         </div>
+      </div>
 
-        <!-- Botões de Ação -->
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-          <a
-            href="{{ url_for('dashboard') }}"
-            class="btn btn-secondary me-md-2"
-          >
-            <i class="fas fa-arrow-left me-2"></i>
-            Cancelar
-          </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-robot me-2"></i>
-            Criar e Ativar Bot
-          </button>
-        </div>
-      </form>
-    </div>
+      <!-- Botões de Ação -->
+      <div class="form-actions">
+        <a href="{{ url_for('main.dashboard') }}" class="btn-secondary">
+          <i class="fas fa-arrow-left me-2"></i>
+          Cancelar
+        </a>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-robot me-2"></i>
+          Criar e Ativar Bot
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
   // Conta o número atual de planos carregados
-  let planCount = document.querySelectorAll(".value-input-group").length;
+  let planCount = document.querySelectorAll(".plan-item").length;
 
   function addPlan() {
     if (planCount >= 10) {
@@ -486,50 +415,48 @@ endblock %} {% block head %}
       return;
     }
 
-    const container = document.getElementById("plans-container");
+    const container = document.getElementById("plans-list");
     const newPlan = document.createElement("div");
-    newPlan.className = "value-input-group";
+    newPlan.className = "plan-item";
 
     newPlan.innerHTML = `
-    <div class="row align-items-center">
-      <div class="col-md-4">
+      <div class="plan-col-name">
         <input
           type="text"
-          class="form-control"
+          class="form-input"
           name="plan_names[]"
-          placeholder="Plano Premium"
+          placeholder="Novo Plano"
           maxlength="50"
         />
       </div>
-      <div class="col-md-3">
+      <div class="plan-col-value">
         <input
           type="number"
-          class="form-control"
+          class="form-input"
           name="pix_values[]"
           placeholder="19.90"
           step="1.00"
           min="1"
         />
       </div>
-      <div class="col-md-3">
+      <div class="plan-col-duration">
         <select class="form-select" name="plan_duration[]">
           <option value="">Selecione...</option>
           <option value="semanal">Semanal</option>
           <option value="quinzenal">Quinzenal</option>
-          <option value="mensal">Mensal</option>
+          <option value="mensal" selected>Mensal</option>
           <option value="trimestral">Trimestral</option>
           <option value="semestral">Semestral</option>
           <option value="anual">Anual</option>
           <option value="vitalicio">Vitalício</option>
         </select>
       </div>
-      <div class="col-md-2">
-        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePlan(this)">
+      <div class="plan-col-actions">
+        <button type="button" class="btn-remove" onclick="removePlan(this)" title="Remover plano">
           <i class="fas fa-trash"></i>
         </button>
       </div>
-    </div>
-  `;
+    `;
 
     container.appendChild(newPlan);
     planCount++;
@@ -537,8 +464,8 @@ endblock %} {% block head %}
   }
 
   function removePlan(button) {
-    const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll(".value-input-group");
+    const container = document.getElementById("plans-list");
+    const plans = container.querySelectorAll(".plan-item");
 
     // Não permite remover se há apenas um plano
     if (plans.length <= 1) {
@@ -546,20 +473,20 @@ endblock %} {% block head %}
       return;
     }
 
-    const planGroup = button.closest(".value-input-group");
-    planGroup.remove();
+    const planItem = button.closest(".plan-item");
+    planItem.remove();
     planCount--;
     updateRemoveButtons();
   }
 
   function updateRemoveButtons() {
-    const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll(".value-input-group");
-    const removeButtons = container.querySelectorAll(".btn-outline-danger");
+    const container = document.getElementById("plans-list");
+    const plans = container.querySelectorAll(".plan-item");
+    const removeButtons = container.querySelectorAll(".btn-remove");
 
     // Mostra/esconde botões de remover baseado no número de planos
     removeButtons.forEach((button) => {
-      button.style.display = plans.length > 1 ? "block" : "none";
+      button.style.display = plans.length > 1 ? "inline-flex" : "none";
     });
   }
 
@@ -637,27 +564,349 @@ endblock %} {% block head %}
   });
 </script>
 
+{% endblock %} {% block scripts %}
 <style>
-  .pix-value-row {
+  /* Create Bot Form Styles */
+  .form-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .form-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+  }
+
+  .bot-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .form-section {
+    background: var(--section-bg);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .section-title i {
+    color: var(--primary-color);
+  }
+
+  .required {
+    color: #ef4444;
+    font-weight: 700;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.5;
+  }
+
+  .form-hint {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .group-id-input {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.9rem;
+  }
+
+  /* Media Upload Styles */
+  .media-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .file-input-wrapper {
+    position: relative;
+  }
+
+  .form-file {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .file-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .file-label:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(139, 92, 246, 0.05);
+  }
+
+  /* Plans Styles */
+  .plans-container {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plans-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--section-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .plan-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plan-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .btn-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+  }
+
+  .btn-remove:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  .add-plan-btn {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  /* Groups Grid */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Info Cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .info-card {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .info-card.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .info-card.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .info-card.success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .info-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .info-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .info-list li {
     margin-bottom: 0.5rem;
   }
 
-  .card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  .info-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
     border: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
   }
 
-  .card-header {
-    border-radius: 8px 8px 0 0 !important;
+  .btn-primary {
+    background: var(--primary-color);
+    color: white;
   }
 
-  .form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  .btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
   }
 
-  .btn {
-    border-radius: 6px;
+  .btn-secondary {
+    background: var(--secondary-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-secondary:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-container {
+      padding: 1rem;
+    }
+
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .media-grid,
+    .groups-grid,
+    .info-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .plans-header,
+    .plan-item {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .plan-col-actions {
+      justify-self: end;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
 {% endblock %}
