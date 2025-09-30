@@ -139,14 +139,10 @@ endblock %} {% block content %}
 </div>
 {% endblock %}
 
-<!-- Data for Charts -->
-<!-- Debug: chart_data = {{ chart_data }} -->
-<script type="application/json" id="chartData">
-  {{ chart_data|tojson|safe if chart_data else '{}' }}
-</script>
-
 {% block scripts %}
 <script>
+  // Dados do gráfico direto do servidor
+  const chartData = {{ chart_data|tojson|safe if chart_data else '{}' }};
   // Função para aplicar filtros
   function applyFilters() {
     const startDate = document.getElementById("startDate").value;
@@ -158,19 +154,17 @@ endblock %} {% block content %}
     if (endDate) params.append("end_date", endDate);
     if (botId) params.append("bot_id", botId);
 
-    window.location.href = `{{ url_for('dashboard') }}?${params.toString()}`;
+    window.location.href = `{{ url_for('main.dashboard') }}?${params.toString()}`;
   }
 
-  // Carregar dados do chart
-  const chartDataElement = document.getElementById("chartData");
-  const chartData = chartDataElement
-    ? JSON.parse(chartDataElement.textContent)
-    : {};
-
   // Debug: Log chart data
+  console.log("=== DEBUG FRONTEND ===");
   console.log("Chart Data:", chartData);
+  console.log("Chart Data type:", typeof chartData);
   console.log("Revenue Labels:", chartData.revenue_labels);
   console.log("Revenue Data:", chartData.revenue_data);
+  console.log("Revenue Labels length:", chartData.revenue_labels?.length);
+  console.log("Revenue Data length:", chartData.revenue_data?.length);
 
   // Verificar se Chart.js está disponível
   if (typeof Chart !== "undefined") {

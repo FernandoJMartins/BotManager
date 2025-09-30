@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, url_for, Blueprint
 from flask_login import login_required, current_user
 import os
 import atexit
+import json
 
 # Importa configurações de banco
 from .database.models import init_db, db
@@ -60,6 +61,9 @@ def create_app():
     @login_required
     def dashboard():
         """Dashboard principal do usuário"""
+        print("=== DASHBOARD ACESSADO ===")
+        app.logger.info("Dashboard acessado pelo usuário")
+        
         from flask import request
         from datetime import datetime, timedelta
         from sqlalchemy import func, and_
@@ -283,9 +287,9 @@ def create_app():
         
         # Dados fixos para teste - vamos garantir que os dados chegem no frontend
         chart_data = {
-            'revenue_labels': ['15/01', '16/01', '17/01', '18/01', '19/01', '20/01', '21/01'],
-            'revenue_data': [245.50, 189.30, 320.75, 156.20, 410.80, 298.45, 180.60],
-            'fees_data': [35.0, 35.0, 35.0, 35.0, 35.0, 35.0, 35.0],
+            'revenue_labels': revenue_labels or ['15/01', '16/01', '17/01', '18/01', '19/01', '20/01', '21/01'],
+            'revenue_data':  revenue_data or [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+            'fees_data': fees_data or [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
             'sessions_labels': ['10h', '14h', '18h', '22h'],
             'sessions_data': [12, 18, 24, 16]
         }
@@ -295,6 +299,13 @@ def create_app():
         print(f"Chart Data: {chart_data}")
         print(f"Type of chart_data: {type(chart_data)}")
         print("========================")
+        
+        app.logger.info(f"Chart data gerado: {chart_data}")
+        
+        # Forçar flush do stdout
+        import sys
+        sys.stdout.flush()
+
         
         # Lista de bots para o filtro
         bots = Bot.query.filter_by(user_id=current_user.id).all()
