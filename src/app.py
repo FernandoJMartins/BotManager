@@ -153,7 +153,7 @@ def create_app():
                 *bot_filter,
                 Payment.status == 'approved',
                 func.date(Payment.created_at) >= datetime.now().strftime('%Y-%m-%d'),
-                func.date(Payment.created_at) <= end_date
+                func.date(Payment.created_at) <= datetime.now().strftime('%Y-%m-%d')
             )).scalar() or 0
         
 
@@ -176,7 +176,7 @@ def create_app():
                 *bot_filter,
                 Payment.status == 'approved',
                 func.date(Payment.created_at) >=  datetime.now().strftime('%Y-%m-%d'),
-                func.date(Payment.created_at) <= end_date
+                func.date(Payment.created_at) <= datetime.now().strftime('%Y-%m-%d')
             )).all()
         
         # Calcular fees e revenue líquido por pagamento
@@ -300,8 +300,8 @@ def create_app():
             for i in range(7):
                 day = datetime.strptime(end_date, '%Y-%m-%d') - timedelta(days=6-i)
                 days.append(day.strftime('%d/%m'))
-                # Valores simulados baseados no revenue líquido real
-                base_net = net_revenue / 7 if net_revenue > 0 else 35  # Revenue líquido médio por dia
+                # Valores baseados no revenue líquido real - zero se não houver vendas
+                base_net = net_revenue / 7 if net_revenue > 0 else 0  # Zero quando não há vendas
                 revenue_values.append(base_net)
                 fees_values.append(0)  # Não vamos mostrar fees no gráfico
             
