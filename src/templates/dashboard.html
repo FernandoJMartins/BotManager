@@ -37,7 +37,9 @@ endblock %} {% block content %}
       <select id="botFilter" class="filter-select">
         <option value="">Todos os bots</option>
         {% for bot in bots %}
-        <option value="{{ bot.id }}">{{ bot.name }}</option>
+        <option value="{{ bot.id }}" {% if bot.id|string == selected_bot_id %}selected{% endif %}>
+          {{ bot.bot_name or bot.bot_username or 'Bot #' + bot.id|string }}
+        </option>
         {% endfor %}
       </select>
     </div>
@@ -107,14 +109,10 @@ endblock %} {% block content %}
       <div class="chart-legend">
         <span class="legend-item">
           <span class="legend-dot purple"></span>
-          Faturamento
-        </span>
-        <span class="legend-item">
-          <span class="legend-dot blue"></span>
-          Taxas
+          Faturamento Líquido
         </span>
         <span class="chart-period"
-          >{{ period_label|default('Últimos 12 meses') }}</span
+          >{{ period_label|default('Últimos 30 dias') }}</span
         >
       </div>
     </div>
@@ -139,163 +137,187 @@ endblock %} {% block content %}
     </div>
   </div>
 </div>
-{% endblock %} 
+{% endblock %}
 
 <!-- Data for Charts -->
 <script type="application/json" id="chartData">
-{
-    "revenue_labels": {% if chart_data %}{{ chart_data.revenue_labels|tojson|safe }}{% else %}[]{% endif %},
-    "revenue_data": {% if chart_data %}{{ chart_data.revenue_data|tojson|safe }}{% else %}[]{% endif %},
-    "fees_data": {% if chart_data %}{{ chart_data.fees_data|tojson|safe }}{% else %}[]{% endif %},
-    "sessions_labels": {% if chart_data %}{{ chart_data.sessions_labels|tojson|safe }}{% else %}[]{% endif %},
-    "sessions_data": {% if chart_data %}{{ chart_data.sessions_data|tojson|safe }}{% else %}[]{% endif %}
-}
+  {
+      "revenue_labels": {% if chart_data %}{{ chart_data.revenue_labels|tojson|safe }}{% else %}[]{% endif %},
+      "revenue_data": {% if chart_data %}{{ chart_data.revenue_data|tojson|safe }}{% else %}[]{% endif %},
+      "fees_data": {% if chart_data %}{{ chart_data.fees_data|tojson|safe }}{% else %}[]{% endif %},
+      "sessions_labels": {% if chart_data %}{{ chart_data.sessions_labels|tojson|safe }}{% else %}[]{% endif %},
+      "sessions_data": {% if chart_data %}{{ chart_data.sessions_data|tojson|safe }}{% else %}[]{% endif %}
+  }
 </script>
 
 {% block scripts %}
 <script>
   // Função para aplicar filtros
   function applyFilters() {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      const botId = document.getElementById('botFilter').value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const botId = document.getElementById("botFilter").value;
 
-      const params = new URLSearchParams();
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
-      if (botId) params.append('bot_id', botId);
+    const params = new URLSearchParams();
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    if (botId) params.append("bot_id", botId);
 
-      window.location.href = `{{ url_for('dashboard') }}?${params.toString()}`;
+    window.location.href = `{{ url_for('dashboard') }}?${params.toString()}`;
   }
 
   // Carregar dados do chart
-  const chartDataElement = document.getElementById('chartData');
-  const chartData = chartDataElement ? JSON.parse(chartDataElement.textContent) : {};
+  const chartDataElement = document.getElementById("chartData");
+  const chartData = chartDataElement
+    ? JSON.parse(chartDataElement.textContent)
+    : {};
 
   // Verificar se Chart.js está disponível
-  if (typeof Chart !== 'undefined') {
-      // Revenue Chart
-      const revenueCanvas = document.getElementById('revenueChart');
-      if (revenueCanvas) {
-          const revenueCtx = revenueCanvas.getContext('2d');
-          const revenueLabels = chartData.revenue_labels || [];
-          const revenueData = chartData.revenue_data || [];
-          const feesData = chartData.fees_data || [];
+  if (typeof Chart !== "undefined") {
+    // Revenue Chart
+    const revenueCanvas = document.getElementById("revenueChart");
+    if (revenueCanvas) {
+      const revenueCtx = revenueCanvas.getContext("2d");
+      const revenueLabels = chartData.revenue_labels || [];
+      const revenueData = chartData.revenue_data || [];
+      const feesData = chartData.fees_data || [];
 
-          new Chart(revenueCtx, {
-              type: 'line',
-              data: {
-                  labels: revenueLabels,
-                  datasets: [{
-                      label: 'Faturamento',
-                      data: revenueData,
-                      borderColor: '#8b5cf6',
-                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                      fill: true,
-                      tension: 0.4
-                  }, {
-                      label: 'Taxas',
-                      data: feesData,
-                      borderColor: '#06b6d4',
-                      backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                      fill: true,
-                      tension: 0.4
-                  }]
+      new Chart(revenueCtx, {
+        type: "line",
+        data: {
+          labels: revenueLabels,
+          datasets: [
+            {
+              label: "Faturamento Líquido",
+              data: revenueData,
+              borderColor: "#8b5cf6",
+              backgroundColor: "rgba(139, 92, 246, 0.15)",
+              fill: "origin",
+              tension: 0.4,
+              borderWidth: 3,
+              pointBackgroundColor: "#8b5cf6",
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              pointRadius: 5,
+              pointHoverRadius: 7,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: '#8b5cf6',
+              borderWidth: 1,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: "rgba(255, 255, 255, 0.1)",
+                drawBorder: false,
               },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                      legend: {
-                          display: false
-                      }
-                  },
-                  scales: {
-                      y: {
-                          grid: {
-                              color: 'rgba(255, 255, 255, 0.1)'
-                          },
-                          ticks: {
-                              color: '#9ca3af',
-                              callback: function(value) {
-                                  return 'R$ ' + value.toLocaleString('pt-BR');
-                              }
-                          }
-                      },
-                      x: {
-                          grid: {
-                              color: 'rgba(255, 255, 255, 0.1)'
-                          },
-                          ticks: {
-                              color: '#9ca3af'
-                          }
-                      }
-                  }
-              }
-          });
-      }
-
-      // Sessions Chart
-      const sessionsCanvas = document.getElementById('sessionsChart');
-      if (sessionsCanvas) {
-          const sessionsCtx = sessionsCanvas.getContext('2d');
-          const sessionsLabels = chartData.sessions_labels || [];
-          const sessionsData = chartData.sessions_data || [];
-
-          new Chart(sessionsCtx, {
-              type: 'line',
-              data: {
-                  labels: sessionsLabels,
-                  datasets: [{
-                      data: sessionsData,
-                      borderColor: '#8b5cf6',
-                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                      fill: true,
-                      tension: 0.4
-                  }]
+              ticks: {
+                color: "#9ca3af",
+                padding: 10,
+                callback: function (value) {
+                  return "R$ " + value.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  });
+                },
               },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                      legend: {
-                          display: false
-                      }
-                  },
-                  scales: {
-                      y: {
-                          display: false
-                      },
-                      x: {
-                          grid: {
-                              display: false
-                          },
-                          ticks: {
-                              color: '#9ca3af',
-                              font: {
-                                  size: 10
-                              }
-                          }
-                      }
-                  }
-              }
-          });
-      }
+            },
+            x: {
+              grid: {
+                color: "rgba(255, 255, 255, 0.05)",
+                drawBorder: false,
+              },
+              ticks: {
+                color: "#9ca3af",
+                padding: 10,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Sessions Chart
+    const sessionsCanvas = document.getElementById("sessionsChart");
+    if (sessionsCanvas) {
+      const sessionsCtx = sessionsCanvas.getContext("2d");
+      const sessionsLabels = chartData.sessions_labels || [];
+      const sessionsData = chartData.sessions_data || [];
+
+      new Chart(sessionsCtx, {
+        type: "line",
+        data: {
+          labels: sessionsLabels,
+          datasets: [
+            {
+              data: sessionsData,
+              borderColor: "#8b5cf6",
+              backgroundColor: "rgba(139, 92, 246, 0.1)",
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+          scales: {
+            y: {
+              display: false,
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                color: "#9ca3af",
+                font: {
+                  size: 10,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
   }
 
   // Mobile sidebar toggle
   function toggleSidebar() {
-      const sidebar = document.querySelector('.sidebar');
-      if (sidebar) {
-          sidebar.classList.toggle('active');
-      }
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) {
+      sidebar.classList.toggle("active");
+    }
   }
 
   // Auto-refresh data every 5 minutes
   setInterval(() => {
-      if (!window.location.search) {
-          window.location.reload();
-      }
+    if (!window.location.search) {
+      window.location.reload();
+    }
   }, 300000);
 </script>
 
