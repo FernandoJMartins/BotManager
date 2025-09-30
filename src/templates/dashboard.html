@@ -92,6 +92,19 @@ endblock %} {% block content %}
       +{{ stats.sessions_change|default(0) }}%
     </div>
   </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-calendar-day"></i>
+        Hoje
+      </span>
+    </div>
+    <div class="stat-value">R$ {{ stats.today_revenue|default('0.00') }}</div>
+    <div class="stat-change neutral">
+      {{ stats.today_payments_count|default(0) }} pagamento{{ 's' if stats.today_payments_count != 1 else '' }}
+    </div>
+  </div>
 </div>
 
 <!-- Charts Section -->
@@ -110,6 +123,10 @@ endblock %} {% block content %}
         <span class="legend-item">
           <span class="legend-dot purple"></span>
           Faturamento Total
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot gray"></span>
+          {{ stats.total_payments_count|default(0) }} pagamento{{ 's' if stats.total_payments_count != 1 else '' }}
         </span>
         <span class="chart-period"
           >{{ period_label|default('Últimos 30 dias') }}</span

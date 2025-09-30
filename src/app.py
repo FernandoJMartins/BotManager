@@ -76,9 +76,10 @@ def create_app():
         end_date = request.args.get('end_date') 
         bot_id = request.args.get('bot_id')
         
-        # Datas padrão (últimos 30 dias)
+        # Datas padrão (início do mês até hoje)
         if not start_date:
-            start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            today = datetime.now()
+            start_date = today.replace(day=1).strftime('%Y-%m-%d')  # Primeiro dia do mês atual
         if not end_date:
             end_date = datetime.now().strftime('%Y-%m-%d')
             
@@ -144,6 +145,19 @@ def create_app():
                 func.date(Payment.created_at) <= end_date
             )).scalar() or 0
         
+        #6. Faturamento total (soma dos pagamentos aprovados menos taxas) -> HOJE
+
+        today_payments = db.session.query(func.sum(Payment.amount))\
+            .join(Bot, Payment.bot_id == Bot.id)\
+            .filter(and_(
+                *bot_filter,
+                Payment.status == 'approved',
+                func.date(Payment.created_at) >= datetime.now().strftime('%Y-%m-%d'),
+                func.date(Payment.created_at) <= end_date
+            )).scalar() or 0
+        
+
+
         # Calcular taxas baseado nas plataformas dos pagamentos
         payments_with_fees = db.session.query(Payment)\
             .join(Bot, Payment.bot_id == Bot.id)\
@@ -154,14 +168,37 @@ def create_app():
                 func.date(Payment.created_at) <= end_date
             )).all()
         
+
+        # Calcular taxas baseado nas plataformas dos pagamentos > HOJEEE
+        payments_with_fees_today = db.session.query(Payment)\
+            .join(Bot, Payment.bot_id == Bot.id)\
+            .filter(and_(
+                *bot_filter,
+                Payment.status == 'approved',
+                func.date(Payment.created_at) >=  datetime.now().strftime('%Y-%m-%d'),
+                func.date(Payment.created_at) <= end_date
+            )).all()
+        
         # Calcular fees e revenue líquido por pagamento
         total_fees = sum(payment.get_platform_fees() for payment in payments_with_fees)
         net_revenue = total_payments - total_fees
         transaction_count = len(payments_with_fees)
+
+        today_fees = sum(payment.get_platform_fees() for payment in payments_with_fees_today)
+        today_revenue = today_payments - today_fees
+        transaction_today_count = len (payments_with_fees_today)
+
         
         stats['total_revenue'] = f"{net_revenue:.2f}"
         stats['total_fees'] = f"{total_fees:.2f}"
         stats['gross_revenue'] = f"{total_payments:.2f}"
+        
+        # Estatísticas de hoje
+        stats['today_revenue'] = f"{today_revenue:.2f}"
+        stats['today_payments_count'] = transaction_today_count
+        
+        # Estatísticas totais do período
+        stats['total_payments_count'] = transaction_count
         
         # Calcular mudanças percentuais comparando com período anterior
         period_days = (datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days
