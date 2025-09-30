@@ -11,13 +11,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
 COPY src/ ./src/
-COPY . .
+
+# Copy the environment variables example
+COPY .env.example .env
 
 # Expose the port the app runs on
 EXPOSE 5000
 
-# Set PYTHONPATH to ensure proper module imports
-ENV PYTHONPATH=/app
-
 # Command to run the application
-CMD ["python", "-m", "src.app"]
+CMD ["python", "src/app.py"]

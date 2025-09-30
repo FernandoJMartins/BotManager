@@ -115,21 +115,6 @@ endblock %} {% block head %}
     margin-bottom: 2rem;
   }
 
-  .animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   .notification {
     position: fixed;
     top: 20px;
@@ -164,14 +149,14 @@ endblock %} {% block head %}
 <div class="container">
   {% if bots %}
   <!-- Estatísticas Overview -->
-  <div class="stats-overview animate-fade-in-up"></div>
+  <div class="stats-overview"></div>
 
   <!-- Grid de Bots -->
   <div class="row">
     {% for bot in bots %}
     <div class="col-md-6 col-lg-4 mb-4">
       <div
-        class="card bot-card animate-fade-in-up {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
+        class="card bot-card {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
         data-bot-id="{{ bot.id }}"
       >
         <div class="card-header">

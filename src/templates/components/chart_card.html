@@ -1,0 +1,39 @@
+<!-- Componente: Card de Gráfico -->
+<!-- Uso: {% include 'components/chart_card.html' with context %} -->
+
+<div class="chart-card {{ size }}">
+    <div class="chart-header">
+        <h{{ '3' if size == 'large' else '4' }}>{{ title }}</h{{ '3' if size == 'large' else '4' }}>
+        <div class="chart-value">{{ value }} 
+            {% if change %}
+            <span class="change {{ 'positive' if change >= 0 else 'negative' }}">
+                {{ '+' if change >= 0 else '' }}{{ change }}%
+            </span>
+            {% endif %}
+        </div>
+        {% if legend %}
+        <div class="chart-legend">
+            {% for item in legend %}
+            <span class="legend-item">
+                <span class="legend-dot {{ item.color }}"></span>
+                {{ item.label }}
+            </span>
+            {% endfor %}
+            {% if period %}
+            <span class="chart-period">{{ period }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <div class="chart-container">
+        <canvas id="{{ chart_id }}"></canvas>
+    </div>
+    {% if footer %}
+    <div class="chart-footer">
+        <span class="chart-period">{{ footer.period }}</span>
+        {% if footer.link %}
+        <a href="{{ footer.link.url }}" class="view-report">{{ footer.link.text }}</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

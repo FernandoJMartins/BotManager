@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BotManager Dashboard - Dark Theme</title>
+    <link rel="stylesheet" href="test_dashboard.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-robot"></i>
+            <span>BotManager X</span>
+          </div>
+        </div>
+
+        <div class="sidebar-search">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar..." />
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <ul>
+            <li class="nav-item active">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-robot"></i>
+                <span>Todos os bots</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Clientes</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-tasks"></i>
+                <span>Tarefas</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-star"></i>
+                <span>Recursos</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-users-cog"></i>
+                <span>Usuários</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-dollar-sign"></i>
+                <span>Preços</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-plug"></i>
+                <span>Integrações</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-file-alt"></i>
+                <span>Páginas template</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-profile">
+            <div class="user-avatar">
+              <img
+                src="https://via.placeholder.com/40x40/6366f1/ffffff?text=FC"
+                alt="User"
+              />
+            </div>
+            <div class="user-info">
+              <span class="user-name">Fernando Carter</span>
+              <span class="user-role">Admin principal</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+          <div class="header-left">
+            <h1>Bem-vindo de volta, Fernando</h1>
+            <p>Monitore seus bots e relatórios de tráfego do Telegram</p>
+          </div>
+          <div class="header-right">
+            <button class="btn-secondary">
+              <i class="fas fa-download"></i>
+              Exportar dados
+            </button>
+            <button class="btn-primary">
+              <i class="fas fa-plus"></i>
+              Criar relatório
+            </button>
+          </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">
+                <i class="fas fa-eye"></i>
+                Visualizações de páginas
+              </span>
+              <button class="stat-menu">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+            <div class="stat-value">50.8K</div>
+            <div class="stat-change positive">+5.36%</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">
+                <i class="fas fa-users"></i>
+                Usuários mensais
+              </span>
+              <button class="stat-menu">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+            <div class="stat-value">23.6K</div>
+            <div class="stat-change negative">-15.65%</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">
+                <i class="fas fa-user-plus"></i>
+                Novos cadastros
+              </span>
+              <button class="stat-menu">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+            <div class="stat-value">756</div>
+            <div class="stat-change positive">+3.18%</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">
+                <i class="fas fa-crown"></i>
+                Assinaturas
+              </span>
+              <button class="stat-menu">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+            <div class="stat-value">2.3K</div>
+            <div class="stat-change positive">+13.8%</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+          <!-- Revenue Chart -->
+          <div class="chart-card large">
+            <div class="chart-header">
+              <h3>Receita total</h3>
+              <div class="chart-value">
+                $240.8K <span class="change positive">+9.18%</span>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-item">
+                  <span class="legend-dot purple"></span>
+                  Receita
+                </span>
+                <span class="legend-item">
+                  <span class="legend-dot blue"></span>
+                  Despesas
+                </span>
+                <span class="chart-period">Jan 2024 - Dez 2024</span>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="revenueChart"></canvas>
+            </div>
+            <div class="chart-milestone">
+              <span class="milestone-value">$125.2k</span>
+              <span class="milestone-date">June 21 2023</span>
+              <span class="milestone-change">+15.36%</span>
+            </div>
+          </div>
+
+          <!-- Profit Chart -->
+          <div class="chart-card small">
+            <div class="chart-header">
+              <h4>Lucro total</h4>
+              <div class="chart-value">
+                $144.6K <span class="change positive">+26.52%</span>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="profitChart"></canvas>
+            </div>
+            <div class="chart-footer">
+              <span class="chart-period">Últimos 12 meses</span>
+              <a href="#" class="view-report">Ver relatório</a>
+            </div>
+          </div>
+
+          <!-- Sessions Chart -->
+          <div class="chart-card small">
+            <div class="chart-header">
+              <h4>Total de sessões</h4>
+              <div class="chart-value">
+                400 <span class="change positive">+12.8%</span>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="sessionsChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Revenue Chart
+      const revenueCtx = document
+        .getElementById("revenueChart")
+        .getContext("2d");
+      new Chart(revenueCtx, {
+        type: "line",
+        data: {
+          labels: [
+            "Jan",
+            "Fev",
+            "Mar",
+            "Abr",
+            "Mai",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Set",
+            "Out",
+            "Nov",
+            "Dez",
+          ],
+          datasets: [
+            {
+              label: "Receita",
+              data: [30, 45, 35, 60, 45, 80, 70, 90, 85, 100, 95, 110],
+              borderColor: "#8b5cf6",
+              backgroundColor: "rgba(139, 92, 246, 0.1)",
+              fill: true,
+              tension: 0.4,
+            },
+            {
+              label: "Despesas",
+              data: [20, 35, 25, 45, 35, 60, 50, 70, 65, 75, 70, 80],
+              borderColor: "#06b6d4",
+              backgroundColor: "rgba(6, 182, 212, 0.1)",
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+          scales: {
+            y: {
+              grid: {
+                color: "rgba(255, 255, 255, 0.1)",
+              },
+              ticks: {
+                color: "#9ca3af",
+              },
+            },
+            x: {
+              grid: {
+                color: "rgba(255, 255, 255, 0.1)",
+              },
+              ticks: {
+                color: "#9ca3af",
+              },
+            },
+          },
+        },
+      });
+
+      // Profit Chart
+      const profitCtx = document.getElementById("profitChart").getContext("2d");
+      new Chart(profitCtx, {
+        type: "bar",
+        data: {
+          labels: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+          datasets: [
+            {
+              data: [40, 60, 45, 80, 70, 90, 65, 85, 75, 95, 80, 100],
+              backgroundColor: "#8b5cf6",
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+          scales: {
+            y: {
+              display: false,
+            },
+            x: {
+              display: false,
+            },
+          },
+        },
+      });
+
+      // Sessions Chart
+      const sessionsCtx = document
+        .getElementById("sessionsChart")
+        .getContext("2d");
+      new Chart(sessionsCtx, {
+        type: "line",
+        data: {
+          labels: ["10 AM", "2 AM", "4 PM", "11 PM"],
+          datasets: [
+            {
+              data: [300, 400, 350, 380],
+              borderColor: "#8b5cf6",
+              backgroundColor: "rgba(139, 92, 246, 0.1)",
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+          scales: {
+            y: {
+              display: false,
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                color: "#9ca3af",
+                font: {
+                  size: 10,
+                },
+              },
+            },
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

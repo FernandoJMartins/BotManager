@@ -323,13 +323,8 @@ class TelegramBotManager:
                         with open(bot_config.welcome_audio, 'rb') as audio_file:
                             await update.message.reply_audio(audio=audio_file)
                         logger.info(f"✅ Áudio inicial enviado via arquivo local")
-                        audio_sent = True
                     except Exception as local_audio_error:
                         logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
-                
-                # Log final sobre o status do áudio
-                if not audio_sent and (bot_config.welcome_audio_file_id or bot_config.welcome_audio):
-                    logger.warning(f"⚠️ Não foi possível enviar áudio inicial devido a problemas de conectividade. Continuando...")
             else:
                 logger.info(f"⚠️ Mídia não enviada - Grupos VIP e/ou Notificações não configurados para bot {bot_config.bot_username}")
             

@@ -152,7 +152,7 @@
 
       /* Main content */
       main {
-        background: transparent;
+        background: black;
         min-height: 100vh;
       }
 
@@ -315,11 +315,6 @@
         transition: width 0.2s ease, height 0.2s ease;
       }
 
-      .btn:hover::before {
-        width: 200px;
-        height: 200px;
-      }
-
       .btn-primary {
         background: linear-gradient(
           135deg,
@@ -327,16 +322,6 @@
           var(--primary-blue-light) 100%
         );
         box-shadow: 0 4px 14px 0 rgba(30, 64, 175, 0.3);
-      }
-
-      .btn-primary:hover {
-        background: linear-gradient(
-          135deg,
-          var(--primary-blue-dark) 0%,
-          var(--primary-blue) 100%
-        );
-        transform: translate3d(0, -1px, 0);
-        box-shadow: 0 6px 20px 0 rgba(30, 64, 175, 0.4);
       }
 
       .btn-success {
@@ -348,11 +333,6 @@
         box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.3);
       }
 
-      .btn-success:hover {
-        transform: translate3d(0, -1px, 0);
-        box-shadow: 0 6px 20px 0 rgba(5, 150, 105, 0.4);
-      }
-
       .btn-warning {
         background: linear-gradient(
           135deg,
@@ -362,11 +342,6 @@
         box-shadow: 0 4px 14px 0 rgba(234, 88, 12, 0.3);
       }
 
-      .btn-warning:hover {
-        transform: translate3d(0, -1px, 0);
-        box-shadow: 0 6px 20px 0 rgba(234, 88, 12, 0.4);
-      }
-
       .btn-info {
         background: linear-gradient(
           135deg,
@@ -374,11 +349,6 @@
           var(--info-teal-light) 100%
         );
         box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.3);
-      }
-
-      .btn-info:hover {
-        transform: translate3d(0, -1px, 0);
-        box-shadow: 0 6px 20px 0 rgba(8, 145, 178, 0.4);
       }
 
       /* Tabelas melhoradas */
@@ -487,71 +457,6 @@
         }
       }
 
-      /* Animações otimizadas */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translate3d(0, 20px, 0);
-        }
-        to {
-          opacity: 1;
-          transform: translate3d(0, 0, 0);
-        }
-      }
-
-      @keyframes slideInLeft {
-        from {
-          opacity: 0;
-          transform: translate3d(-20px, 0, 0);
-        }
-        to {
-          opacity: 1;
-          transform: translate3d(0, 0, 0);
-        }
-      }
-
-      .animate-fade-in {
-        animation: fadeInUp 0.3s ease-out forwards;
-        will-change: transform, opacity;
-      }
-
-      .animate-slide-in {
-        animation: slideInLeft 0.3s ease-out forwards;
-        will-change: transform, opacity;
-      }
-
-      /* Remove will-change após animação para liberar recursos */
-      .animate-fade-in.animation-complete,
-      .animate-slide-in.animation-complete {
-        will-change: auto;
-      }
-
-      /* Scrollbar customizada */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: linear-gradient(
-          135deg,
-          var(--primary-blue) 0%,
-          var(--primary-blue-light) 100%
-        );
-        border-radius: 10px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(
-          135deg,
-          var(--primary-blue-dark) 0%,
-          var(--primary-blue) 100%
-        );
-      }
-
       /* Loading states otimizado */
       .loading {
         position: relative;
@@ -582,6 +487,32 @@
         100% {
           transform: translate3d(100%, 0, 0);
         }
+      }
+
+      /* Remove TODAS as bordas azuis de focus do Bootstrap */
+      *:focus,
+      *:focus-visible,
+      *:focus-within,
+      .form-control:focus,
+      .form-select:focus,
+      .form-check-input:focus,
+      .btn:focus,
+      .btn-check:focus + .btn,
+      .form-range:focus,
+      .form-control:focus,
+      input:focus,
+      textarea:focus,
+      select:focus,
+      button:focus,
+      a:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: #dee2e6 !important;
+      }
+
+      /* Remove outline padrão do navegador */
+      * {
+        outline: none !important;
       }
     </style>
   </head>
@@ -642,7 +573,7 @@
             {% with messages = get_flashed_messages(with_categories=true) %} {%
             if messages %} {% for category, message in messages %}
             <div
-              class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show animate-fade-in"
+              class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
               role="alert"
             >
               <i
@@ -658,7 +589,7 @@
             {% endfor %} {% endif %} {% endwith %}
 
             <!-- Page content -->
-            <div class="animate-fade-in">{% block content %}{% endblock %}</div>
+            <div class="">{% block content %}{% endblock %}</div>
           </div>
         </main>
       </div>

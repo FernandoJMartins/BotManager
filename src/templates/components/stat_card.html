@@ -1,0 +1,20 @@
+<!-- Componente: Card de Estatística -->
+<!-- Uso: {% include 'components/stat_card.html' with context %} -->
+
+<div class="stat-card">
+  <div class="stat-header">
+    <span class="stat-title">
+      <i class="{{ icon }}"></i>
+      {{ title }}
+    </span>
+    {% if show_menu %}
+    <button class="stat-menu">
+      <i class="fas fa-ellipsis-h"></i>
+    </button>
+    {% endif %}
+  </div>
+  <div class="stat-value">{{ value }}</div>
+  <div class="stat-change {{ 'positive' if change >= 0 else 'negative' }}">
+    {{ '+' if change >= 0 else '' }}{{ change }}%
+  </div>
+</div>

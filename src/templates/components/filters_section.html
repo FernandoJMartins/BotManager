@@ -1,0 +1,64 @@
+<!-- Componente: Seção de Filtros -->
+<!-- Uso: {% include 'components/filters_section.html' with context %} -->
+
+<div class="filters-section">
+    <div class="filters-grid">
+        <div class="filter-group">
+            <label class="filter-label">Período</label>
+            <input type="date" 
+                   id="startDate" 
+                   class="filter-input" 
+                   value="{{ start_date }}">
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">Até</label>
+            <input type="date" 
+                   id="endDate" 
+                   class="filter-input" 
+                   value="{{ end_date }}">
+        </div>
+        {% if show_bot_filter %}
+        <div class="filter-group">
+            <label class="filter-label">Bot</label>
+            <select id="botFilter" class="filter-select">
+                <option value="">Todos os bots</option>
+                {% for bot in bots %}
+                <option value="{{ bot.id }}" 
+                        {{ 'selected' if selected_bot_id == bot.id|string else '' }}>
+                    {{ bot.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        {% if additional_filters %}
+        {% for filter in additional_filters %}
+        <div class="filter-group">
+            <label class="filter-label">{{ filter.label }}</label>
+            {% if filter.type == 'select' %}
+            <select id="{{ filter.id }}" class="filter-select">
+                {% for option in filter.options %}
+                <option value="{{ option.value }}" 
+                        {{ 'selected' if option.selected else '' }}>
+                    {{ option.label }}
+                </option>
+                {% endfor %}
+            </select>
+            {% elif filter.type == 'input' %}
+            <input type="{{ filter.input_type|default('text') }}" 
+                   id="{{ filter.id }}" 
+                   class="filter-input" 
+                   value="{{ filter.value }}"
+                   placeholder="{{ filter.placeholder }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="filter-group">
+            <button onclick="applyFilters()" class="btn-primary">
+                <i class="fas fa-filter"></i>
+                Aplicar filtros
+            </button>
+        </div>
+    </div>
+</div>

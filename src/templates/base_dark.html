@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}BotManager Dashboard{% endblock %}</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard-dark.css') }}"
+    />
+    <style>
+      /* Reset de focus - sem bordas azuis */
+      *:focus,
+      *:focus-visible,
+      *:focus-within,
+      .form-control:focus,
+      .form-select:focus,
+      .btn:focus,
+      input:focus,
+      textarea:focus,
+      select:focus,
+      button:focus,
+      a:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: #dee2e6 !important;
+      }
+      * {
+        outline: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-robot"></i>
+            <span>BotManager X</span>
+          </div>
+        </div>
+
+        <div class="sidebar-search">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar..." id="sidebarSearch" />
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <ul>
+            <li
+              class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+            >
+              <a href="{{ url_for('main.dashboard') }}" class="nav-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li
+              class="nav-item {% if request.endpoint == 'bots.list_bots' %}active{% endif %}"
+            >
+              <a href="{{ url_for('bots.list_bots') }}" class="nav-link">
+                <i class="fas fa-robot"></i>
+                <span>Todos os bots</span>
+              </a>
+            </li>
+            <li
+              class="nav-item {% if request.endpoint == 'bots.create_bot' %}active{% endif %}"
+            >
+              <a href="{{ url_for('bots.create_bot') }}" class="nav-link">
+                <i class="fas fa-plus-circle"></i>
+                <span>Criar bot</span>
+              </a>
+            </li>
+            <li
+              class="nav-item {% if 'client' in request.endpoint %}active{% endif %}"
+            >
+              <a href="#" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Clientes</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-dollar-sign"></i>
+                <span>Pagamentos</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-profile">
+            <div class="user-avatar">
+              <img
+                src="https://via.placeholder.com/40x40/6366f1/ffffff?text={{ session.user_name[0] if session.user_name else 'U' }}"
+                alt="User"
+              />
+            </div>
+            <div class="user-info">
+              <span class="user-name"
+                >{{ session.user_name or 'Usuário' }}</span
+              >
+              <span class="user-role">Admin principal</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">{% block content %}{% endblock %}</main>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+      // Search functionality
+      document
+        .getElementById("sidebarSearch")
+        .addEventListener("input", function (e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const navItems = document.querySelectorAll(".nav-item");
+
+          navItems.forEach((item) => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+              item.style.display = "block";
+            } else {
+              item.style.display = "none";
+            }
+          });
+        });
+
+      // Mobile sidebar toggle
+      function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        sidebar.classList.toggle("active");
+      }
+
+      // Active nav item highlight
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll(".nav-link");
+
+        navLinks.forEach((link) => {
+          if (link.getAttribute("href") === currentPath) {
+            link.closest(".nav-item").classList.add("active");
+          }
+        });
+      });
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
