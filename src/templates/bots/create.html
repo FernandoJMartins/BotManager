@@ -23,10 +23,7 @@ endblock %} {% block content %}
         </h3>
 
         <div class="form-group">
-          <label for="name" class="form-label">
-            <i class="fas fa-tag me-2"></i>
-            Nome do Bot
-          </label>
+          <label for="name" class="form-label"> Nome do Bot </label>
           <input
             type="text"
             class="form-input"
@@ -64,11 +61,6 @@ endblock %} {% block content %}
 
       <!-- Mensagem de Boas-vindas -->
       <div class="form-section">
-        <h3 class="section-title">
-          <i class="fas fa-comment me-2"></i>
-          Mensagem de Boas-vindas
-        </h3>
-
         <div class="form-group">
           <label for="welcome_message" class="form-label">
             Mensagem personalizada
@@ -89,11 +81,6 @@ endblock %} {% block content %}
 
       <!-- Mídia de Boas-vindas -->
       <div class="form-section">
-        <h3 class="section-title">
-          <i class="fas fa-photo-video me-2"></i>
-          Mídia de Boas-vindas (Opcional)
-        </h3>
-
         <div class="media-grid">
           <div class="form-group">
             <label for="welcome_image" class="form-label">
@@ -149,7 +136,7 @@ endblock %} {% block content %}
       <div class="form-section">
         <h3 class="section-title">
           <i class="fas fa-money-bill-wave me-2"></i>
-          Planos e Configurações
+          Planos
           <span class="required">*</span>
         </h3>
 
@@ -158,7 +145,7 @@ endblock %} {% block content %}
             <div class="plan-col-name">Nome do Plano</div>
             <div class="plan-col-value">Valor (R$)</div>
             <div class="plan-col-duration">Duração</div>
-            <div class="plan-col-actions">Ações</div>
+            <div class="plan-col-actions">Excluir</div>
           </div>
           <div id="plans-list">
             <div class="plan-item">
@@ -354,8 +341,8 @@ endblock %} {% block content %}
               Importante
             </div>
             <p>
-              A imagem e áudio de boas-vindas só serão enviados se ambos os
-              grupos (VIP e Notificações) estiverem configurados.
+              A imagem e áudio de boas-vindas só serão enviados se o seu BOT
+              estiver em ambos os grupos (VIP e Notificações) como ADMIN.
             </p>
           </div>
         </div>
@@ -377,10 +364,6 @@ endblock %} {% block content %}
             <li>
               Quando clicarem em um valor, será gerado um PIX real via sua conta
               PushinPay
-            </li>
-            <li>
-              Você receberá os pagamentos diretamente (menos taxas da
-              plataforma)
             </li>
             <li>
               O cliente será notificado automaticamente quando o pagamento for
@@ -568,7 +551,7 @@ endblock %} {% block content %}
 <style>
   /* Create Bot Form Styles */
   .form-container {
-    max-width: 900px;
+    max-width: 90%;
     margin: 0 auto;
     padding: 2rem 1rem;
   }
@@ -641,8 +624,8 @@ endblock %} {% block content %}
   .form-input:focus,
   .form-textarea:focus,
   .form-select:focus {
-    outline: none;
-    border-color: var(--primary-color);
+    outline: 1px solid white;
+    border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 
@@ -705,7 +688,7 @@ endblock %} {% block content %}
 
   /* Plans Styles */
   .plans-container {
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
     border-radius: 12px;
     padding: 1rem;
     border: 1px solid var(--border-color);
