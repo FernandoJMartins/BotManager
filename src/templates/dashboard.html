@@ -124,10 +124,6 @@ endblock %} {% block content %}
           <span class="legend-dot purple"></span>
           Faturamento Total
         </span>
-        <span class="legend-item">
-          <span class="legend-dot gray"></span>
-          {{ stats.total_payments_count|default(0) }} pagamento{{ 's' if stats.total_payments_count != 1 else '' }}
-        </span>
         <span class="chart-period"
           >{{ period_label|default('Últimos 30 dias') }}</span
         >
@@ -153,6 +149,47 @@ endblock %} {% block content %}
       <canvas id="sessionsChart"></canvas>
     </div>
   </div>
+
+
+  
+<!-- Services Status -->
+<div class="stat-card">
+  <div class="services-header">
+    <h3><i class="fas fa-heartbeat"></i> Status dos Serviços</h3>
+    <button onclick="checkServices()" class="btn btn-sm btn-outline-primary" id="checkServicesBtn">
+      <i class="fas fa-sync-alt"></i> Verificar Agora
+    </button>
+  </div>
+  <div class="status-grid">
+    {% for service in services_status %}
+    <div class="status-card {{ 'online' if service.status == 'online' else 'offline' }}">
+      <div class="status-header">
+        <span class="status-name">{{ service.name }}</span>
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ 'Online' if service.status == 'online' else 'Offline' }}</span>
+        </div>
+      </div>
+      <div class="status-details">
+        <div class="response-time">
+          {% if service.response_time and service.response_time > 0 %}
+          <i class="fas fa-clock"></i>
+          {{ "%.0f"|format(service.response_time) }}ms
+          {% else %}
+          <i class="fas fa-times-circle"></i>
+          Sem resposta
+          {% endif %}
+        </div>
+        <div class="last-check">
+          <i class="fas fa-calendar-alt"></i>
+          Verificado: {{ service.last_check.strftime('%H:%M:%S') if service.last_check else 'N/A' }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
 </div>
 {% endblock %}
 
@@ -337,6 +374,34 @@ endblock %} {% block content %}
           },
         },
       });
+    }
+  }
+
+  // Função para verificar serviços manualmente
+  async function checkServices() {
+    const btn = document.getElementById('checkServicesBtn');
+    const originalText = btn.innerHTML;
+    
+    // Desabilita botão e mostra loading
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+    
+    try {
+      const response = await fetch('/api/services/check');
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Recarrega a página para mostrar os novos status
+        window.location.reload();
+      } else {
+        console.error('Erro ao verificar serviços:', data);
+      }
+    } catch (error) {
+      console.error('Erro na requisição:', error);
+    } finally {
+      // Restaura botão
+      btn.disabled = false;
+      btn.innerHTML = originalText;
     }
   }
 
