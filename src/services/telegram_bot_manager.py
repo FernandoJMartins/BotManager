@@ -279,81 +279,199 @@ class TelegramBotManager:
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Envia mídias iniciais na sequência correta APENAS se ambos os grupos estiverem configurados
-            can_send_media = bot_config.has_vip_group() and bot_config.has_log_group()
+# Substituir as linhas 282-348 por esta versão atualizada:
+
+            # Envia mídias iniciais na sequência correta APENAS se o grupo de logs estiver configurado
+            can_send_media = bot_config.has_log_group()
             
             if can_send_media:
-                # 1. Primeiro envia a imagem inicial se existir (via file_id ou caminho local)
-                image_sent = False
+                # 1. Primeiro envia a mídia inicial (imagem ou vídeo) se existir
+                media_sent = False
                 
-                # Tenta enviar via file_id com retry
-                if bot_config.welcome_image_file_id and not image_sent:
-                    for retry_attempt in range(3):
+                # Verifica se tem mídia configurada (novo sistema unificado)
+                if hasattr(bot_config, 'welcome_media_file_id') and bot_config.welcome_media_file_id:
+                    # Determina o tipo de mídia pelo file_id
+                    media_type = self._detect_media_type(bot_config.welcome_media_file_id)
+                    
+                    for retry_attempt in range(2):
                         try:
-                            await update.message.reply_photo(photo=bot_config.welcome_image_file_id)
-                            logger.info(f"✅ Imagem inicial enviada via file_id")
-                            image_sent = True
+                            if media_type == 'video':
+                                await update.message.reply_video(
+                                    video=bot_config.welcome_media_file_id,
+                                    read_timeout=45,
+                                    write_timeout=45,
+                                    connect_timeout=30
+                                )
+                                logger.info(f"✅ Vídeo inicial enviado via file_id")
+                                print(f"✅ Vídeo inicial enviado via file_id")
+                            else:  # Imagem por padrão
+                                await update.message.reply_photo(
+                                    photo=bot_config.welcome_media_file_id,
+                                    read_timeout=30,
+                                    write_timeout=30,
+                                    connect_timeout=30
+                                )
+                                logger.info(f"✅ Imagem inicial enviada via file_id")
+                                print(f"✅ Imagem inicial enviada via file_id")
+                            
+                            media_sent = True
+                            break
+                            
+                        except Exception as media_error:
+                            logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou ao enviar {media_type}: {media_error}")
+                            if retry_attempt < 1:
+                                await asyncio.sleep(2)
+                
+                # Fallback para arquivo local (novo sistema)
+                if not media_sent and hasattr(bot_config, 'welcome_media') and bot_config.welcome_media:
+                    try:
+                        import os
+                        
+                        if not os.path.exists(bot_config.welcome_media):
+                            logger.warning(f"⚠️ Arquivo de mídia não encontrado: {bot_config.welcome_media}")
+                        else:
+                            # Verifica tamanho (limite 25MB)
+                            file_size = os.path.getsize(bot_config.welcome_media)
+                            max_size = 25 * 1024 * 1024  # 25MB
+                            
+                            if file_size > max_size:
+                                logger.error(f"❌ Arquivo muito grande: {file_size/1024/1024:.1f}MB (máximo: 25MB)")
+                                await update.message.reply_text(
+                                    "⚠️ Arquivo de mídia muito grande. Máximo permitido: 25MB"
+                                )
+                            else:
+                                # Detecta tipo por extensão
+                                file_extension = os.path.splitext(bot_config.welcome_media)[1].lower()
+                                
+                                if file_extension in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+                                    with open(bot_config.welcome_media, 'rb') as video_file:
+                                        await update.message.reply_video(
+                                            video=video_file,
+                                            read_timeout=60,
+                                            write_timeout=60,
+                                            connect_timeout=30
+                                        )
+                                    logger.info(f"✅ Vídeo inicial enviado via arquivo local")
+                                    
+                                elif file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                                    with open(bot_config.welcome_media, 'rb') as img_file:
+                                        await update.message.reply_photo(
+                                            photo=img_file,
+                                            read_timeout=30,
+                                            write_timeout=30,
+                                            connect_timeout=30
+                                        )
+                                    logger.info(f"✅ Imagem inicial enviada via arquivo local")
+                                    
+                                else:
+                                    logger.warning(f"⚠️ Tipo de arquivo não suportado: {file_extension}")
+                                    
+                                media_sent = True
+                                
+                    except Exception as local_media_error:
+                        logger.error(f"❌ Erro ao enviar mídia local: {local_media_error}")
+                
+                # Compatibilidade com sistema antigo (welcome_image_file_id)
+                if not media_sent and hasattr(bot_config, 'welcome_image_file_id') and bot_config.welcome_image_file_id:
+                    for retry_attempt in range(2):
+                        try:
+                            await update.message.reply_photo(
+                                photo=bot_config.welcome_image_file_id,
+                                read_timeout=30,
+                                write_timeout=30,
+                                connect_timeout=30
+                            )
+                            logger.info(f"✅ Imagem inicial enviada via file_id (sistema legado)")
+                            print(f"✅ Imagem inicial enviada via file_id (sistema legado)")
+                            media_sent = True
                             break
                         except Exception as img_error:
-                            if "SSL" in str(img_error) or "TLS" in str(img_error):
-                                logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou (SSL): {img_error}")
-                                if retry_attempt < 2:
-                                    await asyncio.sleep(2 * (retry_attempt + 1))  # 2s, 4s
-                                    continue
-                                else:
-                                    logger.error(f"❌ Todas as tentativas de envio via file_id falharam")
-                            else:
-                                logger.error(f"❌ Erro ao enviar imagem via file_id: {img_error}")
-                                break
+                            logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou ao enviar imagem legada: {img_error}")
+                            if retry_attempt < 1:
+                                await asyncio.sleep(2)
                 
-                # Fallback para arquivo local se file_id falhou
-                if not image_sent and bot_config.welcome_image:
+                # Fallback para arquivo local antigo
+                if not media_sent and hasattr(bot_config, 'welcome_image') and bot_config.welcome_image:
                     try:
-                        with open(bot_config.welcome_image, 'rb') as img_file:
-                            await update.message.reply_photo(photo=img_file)
-                        logger.info(f"✅ Imagem inicial enviada via arquivo local")
-                        image_sent = True
+                        import os
+                        if os.path.exists(bot_config.welcome_image):
+                            with open(bot_config.welcome_image, 'rb') as img_file:
+                                await update.message.reply_photo(
+                                    photo=img_file,
+                                    read_timeout=30,
+                                    write_timeout=30,
+                                    connect_timeout=30
+                                )
+                            logger.info(f"✅ Imagem inicial enviada via arquivo local (sistema legado)")
+                            media_sent = True
+                        else:
+                            logger.warning(f"⚠️ Arquivo de imagem legado não encontrado: {bot_config.welcome_image}")
                     except Exception as local_img_error:
-                        logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
+                        logger.error(f"❌ Erro ao enviar imagem local legada: {local_img_error}")
                 
-                # Se nem file_id nem arquivo local, mas tem só arquivo local configurado
-                if not image_sent and bot_config.welcome_image and not bot_config.welcome_image_file_id:
-                    try:
-                        with open(bot_config.welcome_image, 'rb') as img_file:
-                            await update.message.reply_photo(photo=img_file)
-                        logger.info(f"✅ Imagem inicial enviada via arquivo local")
-                        image_sent = True
-                    except Exception as local_img_error:
-                        logger.error(f"❌ Erro ao enviar imagem local: {local_img_error}")
-                
-                # Log final sobre o status da imagem
-                if not image_sent:
-                    logger.warning(f"⚠️ Não foi possível enviar imagem inicial devido a problemas de conectividade. Continuando com o texto...")
-                
-                # 2. Depois envia o áudio inicial se existir (via file_id ou caminho local)
+                # 2. Depois envia o áudio inicial se existir
                 audio_sent = False
                 
-                # Tenta enviar áudio via file_id com retry
-                if bot_config.welcome_audio_file_id and not audio_sent:
-                    for retry_attempt in range(3):
+                if hasattr(bot_config, 'welcome_audio_file_id') and bot_config.welcome_audio_file_id:
+                    for retry_attempt in range(2):
                         try:
-                            await update.message.reply_audio(audio=bot_config.welcome_audio_file_id)
+                            await update.message.reply_audio(
+                                audio=bot_config.welcome_audio_file_id,
+                                read_timeout=45,
+                                write_timeout=45,
+                                connect_timeout=30
+                            )
                             logger.info(f"✅ Áudio inicial enviado via file_id")
                             audio_sent = True
                             break
                         except Exception as audio_error:
-                            if "SSL" in str(audio_error) or "TLS" in str(audio_error):
-                                logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou (SSL) para áudio: {audio_error}")
-                                if retry_attempt < 2:
-                                    await asyncio.sleep(2 * (retry_attempt + 1))
-                                    continue
-                                else:
-                                    logger.error(f"❌ Todas as tentativas de envio de áudio via file_id falharam")
-                            else:
-                                logger.error(f"❌ Erro ao enviar áudio via file_id: {audio_error}")
-                                break
+                            logger.warning(f"⚠️ Tentativa {retry_attempt + 1} falhou ao enviar áudio: {audio_error}")
+                            if retry_attempt < 1:
+                                await asyncio.sleep(2)
                 
+                # Fallback para arquivo de áudio local
+                if not audio_sent and hasattr(bot_config, 'welcome_audio') and bot_config.welcome_audio:
+                    try:
+                        import os
+                        if os.path.exists(bot_config.welcome_audio):
+                            file_size = os.path.getsize(bot_config.welcome_audio)
+                            max_size = 25 * 1024 * 1024  # 25MB
+                            
+                            if file_size > max_size:
+                                logger.error(f"❌ Áudio muito grande: {file_size/1024/1024:.1f}MB")
+                            else:
+                                with open(bot_config.welcome_audio, 'rb') as audio_file:
+                                    await update.message.reply_audio(
+                                        audio=audio_file,
+                                        read_timeout=45,
+                                        write_timeout=45,
+                                        connect_timeout=30
+                                    )
+                                logger.info(f"✅ Áudio inicial enviado via arquivo local")
+                        else:
+                            logger.warning(f"⚠️ Arquivo de áudio não encontrado: {bot_config.welcome_audio}")
+                    except Exception as local_audio_error:
+                        logger.error(f"❌ Erro ao enviar áudio local: {local_audio_error}")
+                
+                # Log final sobre status da mídia
+                if not media_sent:
+                    if not any([
+                        hasattr(bot_config, 'welcome_media_file_id') and bot_config.welcome_media_file_id,
+                        hasattr(bot_config, 'welcome_media') and bot_config.welcome_media,
+                        hasattr(bot_config, 'welcome_image_file_id') and bot_config.welcome_image_file_id,
+                        hasattr(bot_config, 'welcome_image') and bot_config.welcome_image
+                    ]):
+                        logger.info("📷 Nenhuma mídia de boas-vindas configurada")
+                    else:
+                        logger.warning("⚠️ Não foi possível enviar mídia inicial - verificar configuração ou conectividade")
+                        
+                else:
+                    logger.info(f"⚠️ Mídia não enviada - Grupo de logs não configurado para bot {bot_config.bot_username}")
+            else:
+                logger.error(f"❌ Todas as tentativas de envio de áudio via file_id falharam")
+
                 # Fallback para arquivo local
-                if not audio_sent and bot_config.welcome_audio:
+            if not audio_sent and bot_config.welcome_audio:
                     try:
                         with open(bot_config.welcome_audio, 'rb') as audio_file:
                             await update.message.reply_audio(audio=audio_file)

@@ -33,7 +33,7 @@ class TelegramBot(db.Model):
 
     # Status e controle
     is_active = db.Column(db.Boolean, default=True)  # Bot está ativo quando criado
-    is_running = db.Column(db.Boolean, default=False)
+    is_running = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_activity = db.Column(db.DateTime, nullable=True)
     

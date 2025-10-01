@@ -17,10 +17,6 @@ endblock %} {% block content %}
     <form method="POST" enctype="multipart/form-data" class="bot-form">
       <!-- Informações Básicas -->
       <div class="form-section">
-        <h3 class="section-title">
-          <i class="fas fa-info-circle me-2"></i>
-          Informações Básicas
-        </h3>
 
         <div class="form-group">
           <label for="name" class="form-label"> Nome do Bot </label>
@@ -34,15 +30,13 @@ endblock %} {% block content %}
             maxlength="100"
             placeholder="Ex: Meu Bot de Vendas"
           />
-          <small class="form-hint"
-            >Nome que identificará seu bot no sistema</small
-          >
         </div>
 
         <div class="form-group">
           <label for="token" class="form-label">
             <i class="fas fa-key me-2"></i>
             Token do Bot
+            <span class="required">*</span>
           </label>
           <input
             type="text"
@@ -58,8 +52,6 @@ endblock %} {% block content %}
           </small>
         </div>
       </div>
-
-      <!-- Mensagem de Boas-vindas -->
       <div class="form-section">
         <div class="form-group">
           <label for="welcome_message" class="form-label">
@@ -81,36 +73,64 @@ endblock %} {% block content %}
 
       <!-- Mídia de Boas-vindas -->
       <div class="form-section">
+        
         <div class="media-grid">
+          <!-- Mídia Principal (Imagem/Vídeo) -->
           <div class="form-group">
-            <label for="welcome_image" class="form-label">
-              <i class="fas fa-image me-2"></i>
-              Imagem de Boas-vindas
+            <label for="welcome_media" class="form-label">
+              <i class="fas fa-photo-video me-2"></i>
+              Mídia de Boas-vindas
             </label>
+            
+            <!-- Status da mídia atual -->
+            <div id="currentMediaStatus" class="media-status-container">
+              <div class="media-status no-media">
+                <div class="status-icon">   
+                </div>
+              </div>
+            </div>
+            
+            <!-- Input para nova mídia -->
             <div class="file-input-wrapper">
               <input
                 type="file"
                 class="form-file"
-                id="welcome_image"
-                name="welcome_image"
-                accept="image/*"
+                id="welcome_media"
+                name="welcome_media"
+                accept="image/*,video/*"
+                onchange="handleMediaUpload(this)"
               />
-              <label for="welcome_image" class="file-label">
+              <label for="welcome_media" class="file-label">
                 <i class="fas fa-cloud-upload-alt me-2"></i>
-                Escolher imagem
+                <span class="upload-text">Escolher Mídia</span>
+                <span class="upload-limit">(Máx: 25MB)</span>
               </label>
             </div>
-            <small class="form-hint"
-              >Imagem que será enviada junto com a mensagem de
-              boas-vindas</small
-            >
+            
+            <!-- Preview da nova mídia -->
+            <div id="mediaPreview" class="media-preview" style="display: none;"></div>
+            
+            <small class="form-hint">
+              <strong>Formatos suportados:</strong><br>JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM<br>
+              <strong>Tamanho máximo:</strong> 25MB
+            </small>
           </div>
 
+          <!-- Áudio -->
           <div class="form-group">
             <label for="welcome_audio" class="form-label">
               <i class="fas fa-volume-up me-2"></i>
               Áudio de Boas-vindas
             </label>
+            
+            <!-- Status do áudio atual -->
+            <div id="currentAudioStatus" class="media-status-container">
+              <div class="media-status no-media">
+                <div class="status-icon">
+                </div>
+              </div>
+            </div>
+            
             <div class="file-input-wrapper">
               <input
                 type="file"
@@ -118,20 +138,25 @@ endblock %} {% block content %}
                 id="welcome_audio"
                 name="welcome_audio"
                 accept="audio/*"
+                onchange="handleAudioUpload(this)"
               />
               <label for="welcome_audio" class="file-label">
                 <i class="fas fa-cloud-upload-alt me-2"></i>
-                Escolher áudio
+                <span class="upload-text">Escolher Áudio</span>
+                <span class="upload-limit">(Máx: 25MB)</span>
               </label>
             </div>
-            <small class="form-hint"
-              >Áudio que será enviado junto com a mensagem (se não houver
-              imagem)</small
-            >
+            
+            <!-- Preview do novo áudio -->
+            <div id="audioPreview" class="media-preview" style="display: none;"></div>
+            
+            <small class="form-hint">
+              <strong>Formatos suportados:</strong> MP3, WAV, OGG, M4A, AAC<br>
+              <strong>Tamanho máximo:</strong> 25MB
+            </small>
           </div>
         </div>
-      </div>
-
+        
       <!-- Planos e Configurações -->
       <div class="form-section">
         <h3 class="section-title">
@@ -164,8 +189,8 @@ endblock %} {% block content %}
                   class="form-input"
                   name="pix_values[]"
                   placeholder="10.00"
-                  step="1.00"
-                  min="1"
+                  step="0.01"
+                  min="0.01"
                 />
               </div>
               <div class="plan-col-duration">
@@ -199,8 +224,8 @@ endblock %} {% block content %}
                   class="form-input"
                   name="pix_values[]"
                   placeholder="20.00"
-                  step="1.00"
-                  min="1"
+                  step="0.01"
+                  min="0.01"
                 />
               </div>
               <div class="plan-col-duration">
@@ -241,8 +266,8 @@ endblock %} {% block content %}
                   class="form-input"
                   name="pix_values[]"
                   placeholder="50.00"
-                  step="1.00"
-                  min="1"
+                  step="0.01"
+                  min="0.01"
                 />
               </div>
               <div class="plan-col-duration">
@@ -373,15 +398,59 @@ endblock %} {% block content %}
         </div>
       </div>
 
+      <!-- Error Display -->
+<div id="errorDisplay" class="error-display" style="display: none;">
+  <div class="error-content">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div class="error-text">
+      <strong id="errorTitle">Erro ao validar bot</strong>
+      <span id="errorMessage"></span>
+    </div>
+    <button type="button" onclick="hideError()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Success Display -->
+<div id="successDisplay" class="success-display" style="display: none;">
+  <div class="success-content">
+    <i class="fas fa-check-circle"></i>
+    <div class="success-text">
+      <strong id="successTitle">Bot criado com sucesso!</strong>
+      <span id="successMessage">Seu bot foi configurado e está ativo. Redirecionando...</span>
+    </div>
+    <button type="button" onclick="hideSuccess()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+  <div class="loading-content">
+    <div class="loading-spinner"></div>
+    <h3 id="loadingTitle">Validando configurações...</h3>
+    <p id="loadingMessage">Verificando token do bot...</p>
+    <div class="loading-steps">
+      <div class="step" id="step1">⏳ Validando token do bot</div>
+      <div class="step" id="step2">⏳ Verificando acesso ao grupo VIP</div>
+      <div class="step" id="step3">⏳ Verificando acesso ao grupo de notificações</div>
+      <div class="step" id="step4">⏳ Criando bot</div>
+    </div>
+  </div>
+</div>
+
       <!-- Botões de Ação -->
       <div class="form-actions">
-        <a href="{{ url_for('main.dashboard') }}" class="btn-secondary">
+        <a href="{{ url_for('main.dashboard') }}" class="btn-secondary" id="cancelBtn">
           <i class="fas fa-arrow-left me-2"></i>
           Cancelar
         </a>
-        <button type="submit" class="btn-primary">
+        <button type="submit" class="btn-primary" id="submitBtn">
           <i class="fas fa-robot me-2"></i>
-          Criar e Ativar Bot
+          <span id="submitText">Criar e Ativar Bot</span>
+          <div class="btn-spinner" style="display: none;"></div>
         </button>
       </div>
     </form>
@@ -418,8 +487,8 @@ endblock %} {% block content %}
           class="form-input"
           name="pix_values[]"
           placeholder="19.90"
-          step="1.00"
-          min="1"
+          step="0.01"
+          min="0.01"
         />
       </div>
       <div class="plan-col-duration">
@@ -478,16 +547,180 @@ endblock %} {% block content %}
     updateRemoveButtons();
   });
 
+  let isSubmitting = false;
+
+  // Mostrar loading
+  function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('cancelBtn').style.pointerEvents = 'none';
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const spinner = submitBtn.querySelector('.btn-spinner');
+    
+    submitText.textContent = 'Validando...';
+    spinner.style.display = 'inline-block';
+  }
+
+  // Esconder loading
+  function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('cancelBtn').style.pointerEvents = 'auto';
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const spinner = submitBtn.querySelector('.btn-spinner');
+    
+    submitText.textContent = 'Criar e Ativar Bot';
+    spinner.style.display = 'none';
+    
+    isSubmitting = false;
+  }
+
+  // Mostrar erro
+  function showError(title, message) {
+    document.getElementById('errorTitle').textContent = title;
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorDisplay').style.display = 'block';
+    
+    // Scroll para o topo para ver o erro
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Esconder erro
+  function hideError() {
+    document.getElementById('errorDisplay').style.display = 'none';
+  }
+
+  // Mostrar sucesso
+  function showSuccess(title, message) {
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMessage').textContent = message;
+    document.getElementById('successDisplay').style.display = 'block';
+  }
+
+  // Esconder sucesso
+  function hideSuccess() {
+    document.getElementById('successDisplay').style.display = 'none';
+  }
+
+  // Atualizar steps do loading
+  function updateLoadingStep(stepNumber, status = 'active') {
+    const step = document.getElementById(`step${stepNumber}`);
+    if (step) {
+      step.className = `step ${status}`;
+      if (status === 'completed') {
+        step.innerHTML = step.innerHTML.replace('⏳', '✓');
+      } else if (status === 'error') {
+        step.innerHTML = step.innerHTML.replace('⏳', '✗');
+      } else if (status === 'active') {
+        step.innerHTML = step.innerHTML.replace('✓', '⏳').replace('✗', '⏳');
+      }
+    }
+
+    // Atualizar mensagem de loading
+    const messages = {
+      1: 'Verificando se o token é válido...',
+      2: 'Testando acesso ao grupo VIP como admin...',
+      3: 'Testando acesso ao grupo de notificações como admin...',
+      4: 'Criando e ativando seu bot...'
+    };
+    
+    if (messages[stepNumber]) {
+      document.getElementById('loadingMessage').textContent = messages[stepNumber];
+    }
+  }
+
+  // Função para validar bot nos grupos
+  async function validateBotInGroups(token, vipGroupId, logsGroupId) {
+    try {
+      // Validar token primeiro e obter info do bot
+      updateLoadingStep(1, 'active');
+      const botInfoResponse = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      
+      if (!botInfoResponse.ok) {
+        throw new Error('Token inválido');
+      }
+      
+      const botInfoData = await botInfoResponse.json();
+      if (!botInfoData.ok) {
+        throw new Error('Token inválido');
+      }
+      
+      const botId = botInfoData.result.id;
+      updateLoadingStep(1, 'completed');
+      
+      // Verificar grupo VIP
+      updateLoadingStep(2, 'active');
+      try {
+        const vipResponse = await fetch(`https://api.telegram.org/bot${token}/getChatMember?chat_id=${vipGroupId}&user_id=${botId}`);
+        const vipData = await vipResponse.json();
+        
+        console.log('VIP Group Response:', vipData); // Debug
+        
+        if (!vipData.ok) {
+          throw new Error(`Erro na API do Telegram para grupo VIP: ${vipData.description || 'Erro desconhecido'}`);
+        }
+        
+        if (!['administrator', 'creator'].includes(vipData.result.status)) {
+          throw new Error(`Bot tem status '${vipData.result.status}' no grupo VIP, mas precisa ser 'administrator' ou 'creator'`);
+        }
+        
+        updateLoadingStep(2, 'completed');
+      } catch (error) {
+        updateLoadingStep(2, 'error');
+        console.error('Erro VIP:', error);
+        throw new Error(`Erro no grupo VIP (${vipGroupId}): ${error.message.includes('Erro na API') ? error.message : 'Bot não está no grupo ou não é administrador'}`);
+      }
+      
+      // Verificar grupo de notificações
+      updateLoadingStep(3, 'active');
+      try {
+        const logsResponse = await fetch(`https://api.telegram.org/bot${token}/getChatMember?chat_id=${logsGroupId}&user_id=${botId}`);
+        const logsData = await logsResponse.json();
+        
+        console.log('Logs Group Response:', logsData); // Debug
+        
+        if (!logsData.ok) {
+          throw new Error(`Erro na API do Telegram para grupo de notificações: ${logsData.description || 'Erro desconhecido'}`);
+        }
+        
+        if (!['administrator', 'creator'].includes(logsData.result.status)) {
+          throw new Error(`Bot tem status '${logsData.result.status}' no grupo de notificações, mas precisa ser 'administrator' ou 'creator'`);
+        }
+        
+        updateLoadingStep(3, 'completed');
+      } catch (error) {
+        updateLoadingStep(3, 'error');
+        console.error('Erro Logs:', error);
+        throw new Error(`Erro no grupo de notificações (${logsGroupId}): ${error.message.includes('Erro na API') ? error.message : 'Bot não está no grupo ou não é administrador'}`);
+      }
+      
+      return true;
+      
+    } catch (error) {
+      console.error('Erro geral na validação:', error);
+      throw error;
+    }
+  }
+
   // Validação do formulário
-  document.querySelector("form").addEventListener("submit", function (e) {
+  document.querySelector("form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    
+    if (isSubmitting) {
+      return;
+    }
+
+    // Validações básicas
     const pixInputs = document.querySelectorAll('input[name="pix_values[]"]');
     const planInputs = document.querySelectorAll('input[name="plan_names[]"]');
-    const durationInputs = document.querySelectorAll(
-      'select[name="plan_duration[]"]'
-    );
+    const durationInputs = document.querySelectorAll('select[name="plan_duration[]"]');
 
     const hasValue = Array.from(pixInputs).some(
-      (input) => input.value && parseFloat(input.value) > 0
+      (input) => input.value && parseFloat(input.value) >= 0.01
     );
 
     const hasName = Array.from(planInputs).some(
@@ -499,20 +732,17 @@ endblock %} {% block content %}
     );
 
     if (!hasValue) {
-      e.preventDefault();
-      alert("Configure pelo menos um valor PIX para o seu bot!");
+      showError("Erro de Validação", "Configure pelo menos um valor PIX para o seu bot!");
       return;
     }
 
     if (!hasName) {
-      e.preventDefault();
-      alert("Configure pelo menos um nome de plano para o seu bot!");
+      showError("Erro de Validação", "Configure pelo menos um nome de plano para o seu bot!");
       return;
     }
 
     if (!hasDuration) {
-      e.preventDefault();
-      alert("Configure pelo menos uma duração de plano para o seu bot!");
+      showError("Erro de Validação", "Configure pelo menos uma duração de plano para o seu bot!");
       return;
     }
 
@@ -521,11 +751,88 @@ endblock %} {% block content %}
     const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
 
     if (!tokenPattern.test(token)) {
-      e.preventDefault();
-      alert(
-        "Token do bot inválido! Verifique se copiou corretamente do @BotFather."
-      );
+      showError("Token Inválido", "Token do bot inválido! Verifique se copiou corretamente do @BotFather.");
       return;
+    }
+
+    // Verificar IDs de grupo
+    const idVip = document.getElementById("id_vip").value;
+    const idLogs = document.getElementById("id_logs").value;
+
+    if (!idVip || !idVip.startsWith('-')) {
+      showError("Grupo VIP Inválido", "O ID do Grupo VIP deve começar com '-' (ex: -1001234567890)");
+      return;
+    }
+
+    if (!idLogs || !idLogs.startsWith('-')) {
+      showError("Grupo de Notificações Inválido", "O ID do Grupo de Notificações deve começar com '-' (ex: -1001234567890)");
+      return;
+    }
+
+    isSubmitting = true;
+    showLoading();
+
+    try {
+      // Validar bot nos grupos ANTES de enviar
+      await validateBotInGroups(token, idVip, idLogs);
+      
+      // Se chegou até aqui, bot está OK nos grupos
+      updateLoadingStep(4, 'active');
+      document.getElementById('loadingTitle').textContent = 'Criando seu bot...';
+      document.getElementById('loadingMessage').textContent = 'Salvando configurações no banco de dados...';
+      
+      // Enviar formulário
+      const formData = new FormData(this);
+      
+      const response = await fetch(this.action || window.location.href, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        updateLoadingStep(4, 'completed');
+        hideLoading();
+        
+        // Mostrar mensagem de sucesso
+        showSuccess(
+          'Bot criado com sucesso! 🎉',
+          `Seu bot "${document.getElementById('name').value}" foi configurado e está ativo. Redirecionando para o dashboard...`
+        );
+        
+        // Redirecionar após 3 segundos
+        setTimeout(() => {
+          window.location.href = response.url || '{{ url_for("main.dashboard") }}';
+        }, 3000);
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Erro no servidor: ${response.status}`);
+      }
+      
+    } catch (error) {
+      hideLoading();
+      console.error('Erro completo:', error);
+      
+      let errorTitle = "Erro de Validação";
+      let errorMessage = error.message;
+      
+      if (error.message.includes('Token inválido')) {
+        errorTitle = "Token Inválido";
+        errorMessage = "O token do bot é inválido ou expirou. Verifique se:\n• O token foi copiado corretamente do @BotFather\n• O bot não foi deletado\n• O token não foi regenerado";
+      } else if (error.message.includes('grupo VIP')) {
+        errorTitle = "Problema no Grupo VIP";
+        errorMessage = `Checklist para corrigir:\n1. Adicione o bot no grupo VIP\n2. Vá em: Configurações do Grupo → Administradores → Adicionar Admin\n3. Selecione seu bot e dê permissões de admin\n4. Verifique se o ID do grupo está correto: ${idVip}`;
+      } else if (error.message.includes('grupo de notificações')) {
+        errorTitle = "Problema no Grupo de Notificações";
+        errorMessage = `Checklist para corrigir:\n1. Adicione o bot no grupo de notificações\n2. Vá em: Configurações do Grupo → Administradores → Adicionar Admin\n3. Selecione seu bot e dê permissões de admin\n4. Verifique se o ID do grupo está correto: ${idLogs}\n\n💡 Dica: Teste enviando uma mensagem no grupo. Se o bot não responder, ele não está lá.`;
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorTitle = "Erro de Conexão";
+        errorMessage = "Não foi possível conectar com o Telegram. Verifique sua conexão com a internet e tente novamente.";
+      } else if (error.message.includes('Forbidden') || error.message.includes('403')) {
+        errorTitle = "Acesso Negado";
+        errorMessage = "O bot não tem permissão para acessar os grupos. Certifique-se de que:\n• O bot está nos grupos\n• O bot é administrador\n• Os grupos não são privados demais\n• Você não bloqueou o bot";
+      }
+
+      showError(errorTitle, errorMessage);
     }
   });
 
@@ -545,15 +852,140 @@ endblock %} {% block content %}
   document.getElementById("id_logs").addEventListener("input", function () {
     formatGroupId(this);
   });
+
+  // Função para lidar com upload de mídia (imagem/vídeo)
+  function handleMediaUpload(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('mediaPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    if (file) {
+      // Atualizar o visual do botão
+      uploadText.textContent = file.name;
+      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+      fileLabel.classList.add('file-selected');
+      
+      // Mostrar preview
+      previewContainer.style.display = 'block';
+      
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      let previewHTML = `
+        <div class="file-info">
+          <div class="file-icon">
+            <i class="fas fa-${isImage ? 'image' : isVideo ? 'video' : 'file'}"></i>
+          </div>
+          <div class="file-details">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+          </div>
+          <button type="button" class="remove-file-btn" onclick="clearMediaSelection()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewHTML += `<img src="${e.target.result}" alt="Preview" class="media-preview-img">`;
+          previewContainer.innerHTML = previewHTML;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.innerHTML = previewHTML;
+      }
+    }
+  }
+
+  // Função para lidar com upload de áudio
+  function handleAudioUpload(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('audioPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    if (file) {
+      // Atualizar o visual do botão
+      uploadText.textContent = file.name;
+      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+      fileLabel.classList.add('file-selected');
+      
+      // Mostrar preview
+      previewContainer.style.display = 'block';
+      previewContainer.innerHTML = `
+        <div class="file-info">
+          <div class="file-icon">
+            <i class="fas fa-music"></i>
+          </div>
+          <div class="file-details">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+          </div>
+          <button type="button" class="remove-file-btn" onclick="clearAudioSelection()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <audio controls class="audio-preview">
+          <source src="${URL.createObjectURL(file)}" type="${file.type}">
+          Seu navegador não suporta o elemento de áudio.
+        </audio>
+      `;
+    }
+  }
+
+  // Função para limpar seleção de mídia
+  function clearMediaSelection() {
+    const input = document.getElementById('welcome_media');
+    const previewContainer = document.getElementById('mediaPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    input.value = '';
+    previewContainer.style.display = 'none';
+    previewContainer.innerHTML = '';
+    uploadText.textContent = 'Escolher Imagem ou Vídeo';
+    uploadLimit.textContent = '(Máx: 25MB)';
+    fileLabel.classList.remove('file-selected');
+  }
+
+  // Função para limpar seleção de áudio
+  function clearAudioSelection() {
+    const input = document.getElementById('welcome_audio');
+    const previewContainer = document.getElementById('audioPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    input.value = '';
+    previewContainer.style.display = 'none';
+    previewContainer.innerHTML = '';
+    uploadText.textContent = 'Escolher Áudio';
+    uploadLimit.textContent = '(Máx: 25MB)';
+    fileLabel.classList.remove('file-selected');
+  }
+
+  // Função para formatar tamanho do arquivo
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 </script>
 
 {% endblock %} {% block scripts %}
 <style>
   /* Create Bot Form Styles */
   .form-container {
-    max-width: 90%;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 2rem 1rem;
   }
 
   .form-card {
@@ -573,7 +1005,7 @@ endblock %} {% block content %}
   .form-section {
     background: var(--section-bg);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1.0rem;
     border: 1px solid var(--border-color);
   }
 
@@ -595,9 +1027,6 @@ endblock %} {% block content %}
     font-weight: 700;
   }
 
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
 
   .form-label {
     display: block;
@@ -834,15 +1263,7 @@ endblock %} {% block content %}
     font-size: 0.95rem;
   }
 
-  .btn-primary {
-    background: var(--primary-color);
-    color: white;
-  }
 
-  .btn-primary:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-  }
 
   .btn-secondary {
     background: var(--secondary-bg);
@@ -853,6 +1274,209 @@ endblock %} {% block content %}
   .btn-secondary:hover {
     background: var(--hover-bg);
     color: var(--text-primary);
+  }
+
+  /* Error Display */
+  .error-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(239, 68, 68, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .error-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .error-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .error-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .error-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Success Display */
+  .success-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(34, 197, 94, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: slideInRight 0.4s ease-out;
+  }
+
+  .success-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .success-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .success-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .success-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Button Loading State */
+  .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 0.5rem;
+  }
+
+
+
+  /* File Selection Feedback Styles */
+  .file-label.file-selected {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+
+  .file-label.file-selected:hover {
+    background: rgba(139, 92, 246, 0.15);
+  }
+
+  .media-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+  }
+
+  .file-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .file-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    word-break: break-all;
+  }
+
+  .file-size {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .remove-file-btn {
+    width: 28px;
+    height: 28px;
+    background: #ef4444;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .remove-file-btn:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+  }
+
+  .media-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .audio-preview {
+    width: 100%;
+    height: 40px;
   }
 
   /* Responsive */
@@ -885,10 +1509,12 @@ endblock %} {% block content %}
       flex-direction: column-reverse;
     }
 
-    .btn-primary,
-    .btn-secondary {
-      width: 100%;
-      justify-content: center;
+    .error-display,
+    .success-display {
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      max-width: none;
     }
   }
 </style>
