@@ -1,131 +1,6 @@
-{% extends "base.html" %} {% block title %}Meus Bots - Telegram Bot Manager{%
-endblock %} {% block head %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/dashboard-improved.css') }}"
-/>
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-  rel="stylesheet"
-/>
-<style>
-  .bots-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0 0 20px 20px;
-  }
+{% extends "base_dark.html" %} {% block title %}Meus Bots - BotManager
+{%endblock %} {% block content %}
 
-  .bot-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    overflow: hidden;
-    background: white;
-  }
-
-  .bot-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  }
-
-  .bot-card .card-header {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    border: none;
-    padding: 1.25rem;
-  }
-
-  .bot-card.inactive .card-header {
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  }
-
-  .bot-card.running .card-header {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    color: #333;
-  }
-
-  .status-badge {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  .status-badge.active {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-  }
-
-  .status-badge.pending {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    color: white;
-  }
-
-  .status-badge.running {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    color: white;
-  }
-
-  .bot-info-item {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f8f9fa;
-  }
-
-  .bot-info-item:last-child {
-    border-bottom: none;
-  }
-
-  .bot-info-item i {
-    width: 20px;
-    text-align: center;
-  }
-
-  .action-buttons .btn {
-    border-radius: 10px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .action-buttons .btn:hover {
-    transform: translateY(-2px);
-  }
-
-  .empty-state {
-    padding: 4rem 2rem;
-    text-align: center;
-  }
-
-  .empty-state i {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .stats-overview {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    min-width: 300px;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  }
-</style>
-{% endblock %} {% block content %}
 <!-- Header da página -->
 <div class="bots-header">
   <div class="container">
@@ -154,16 +29,16 @@ endblock %} {% block head %}
   <!-- Grid de Bots -->
   <div class="row">
     {% for bot in bots %}
-    <div class="col-md-6 col-lg-4 mb-4">
+    <div class="stats-grid">
       <div
-        class="card bot-card {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
+        class="stat-card {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
         data-bot-id="{{ bot.id }}"
       >
         <div class="card-header">
           <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
               <i class="fas fa-robot fa-lg me-2"></i>
-              <h6 class="mb-0 fw-bold">{{ bot.name }}</h6>
+              <h6 class="mb-0 fw-bold">{{ bot.username }}</h6>
             </div>
             <span
               class="status-badge {{ 'active' if bot.is_active else 'pending' }}"
@@ -181,7 +56,7 @@ endblock %} {% block head %}
           <div class="bot-info mb-3">
             <div class="bot-info-item">
               <i class="fas fa-at text-primary me-2"></i>
-              <span class="text-muted">@{{ bot.username }}</span>
+              <span class="text-muted">{{ bot.name }}</span>
             </div>
             <div class="bot-info-item">
               <i class="fas fa-calendar text-info me-2"></i>

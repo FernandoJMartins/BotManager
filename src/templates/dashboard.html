@@ -38,7 +38,7 @@ endblock %} {% block content %}
         <option value="">Todos os bots</option>
         {% for bot in bots %}
         <option value="{{ bot.id }}" {% if bot.id|string == selected_bot_id %}selected{% endif %}>
-          {{ bot.bot_name or bot.bot_username or 'Bot #' + bot.id|string }}
+          {{ bot.bot_username or  bot.bot_name  or 'Bot #' + bot.id|string }}
         </option>
         {% endfor %}
       </select>
