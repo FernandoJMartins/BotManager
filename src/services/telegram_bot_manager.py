@@ -187,6 +187,21 @@ class TelegramBotManager:
             logger.info(f"🚀 Comando /start recebido de @{user.username or user.id}")
             print(f"🚀 Comando /start recebido de @{user.username or user.id}")
             
+            # Debug completo dos argumentos recebidos
+            logger.info(f"📋 Debug context.args: {context.args}")
+            logger.info(f"📋 Debug update.message.text: {update.message.text if update.message else 'No message'}")
+            print(f"📋 Debug context.args: {context.args}")
+            print(f"📋 Debug update.message.text: {update.message.text if update.message else 'No message'}")
+            
+            # Captura parâmetros UTM do comando /start se existirem
+            start_params = context.args[0] if context.args else None
+            if start_params:
+                logger.info(f"📊 Parâmetros UTM capturados: {start_params}")
+                print(f"📊 Parâmetros UTM capturados: {start_params}")
+            else:
+                logger.info(f"📊 Nenhum parâmetro UTM encontrado")
+                print(f"📊 Nenhum parâmetro UTM encontrado")
+            
             # Verifica se a configuração do bot está disponível
             if 'config' not in context.application.bot_data:
                 logger.error("❌ Configuração do bot não encontrada no contexto!")
@@ -198,6 +213,26 @@ class TelegramBotManager:
             
             logger.info(f"Bot config encontrada: {bot_config.bot_username}")
             print(f"Bot config encontrada: {bot_config.bot_username}")
+            
+            # Salva código de venda com parâmetros UTM se existirem
+            codigo_venda = None
+            if start_params:
+                try:
+                    from ..models.codigo_venda import CodigoVenda
+                    codigo_venda = CodigoVenda.create_from_start_params(
+                        bot_id=bot_config.id,
+                        telegram_user=user,
+                        start_param=start_params
+                    )
+                    logger.info(f"✅ Código de venda criado com ID: {codigo_venda.id}")
+                    print(f"✅ Código de venda criado com ID: {codigo_venda.id}")
+                    
+                    # Salva o código de venda no contexto para usar depois no PIX
+                    context.user_data['codigo_venda_id'] = codigo_venda.id
+                    
+                except Exception as utm_error:
+                    logger.error(f"❌ Erro ao salvar código de venda: {utm_error}")
+                    print(f"❌ Erro ao salvar código de venda: {utm_error}")
             
             # Mensagem de boas-vindas
             welcome_text = bot_config.welcome_message or "Olá! Bem-vindo ao meu bot!"
@@ -437,6 +472,20 @@ class TelegramBotManager:
             
             db.session.add(payment)
             db.session.commit()
+            
+            # Conecta com código de venda se existir
+            codigo_venda_id = context.user_data.get('codigo_venda_id')
+            if codigo_venda_id:
+                try:
+                    from ..models.codigo_venda import CodigoVenda
+                    codigo_venda = CodigoVenda.query.get(codigo_venda_id)
+                    if codigo_venda:
+                        codigo_venda.mark_as_used(payment.id)
+                        logger.info(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment.id}")
+                        print(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment.id}")
+                except Exception as cv_error:
+                    logger.error(f"❌ Erro ao conectar código de venda: {cv_error}")
+                    print(f"❌ Erro ao conectar código de venda: {cv_error}")
             
             # Cria botões para o PIX
             keyboard = [

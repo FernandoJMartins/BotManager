@@ -20,6 +20,7 @@ def init_db(app):
         from ..models.client import User
         from ..models.bot import TelegramBot
         from ..models.payment import Payment
+        from ..models.codigo_venda import CodigoVenda
         
         # Cria todas as tabelas
         db.create_all()
