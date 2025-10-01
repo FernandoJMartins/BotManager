@@ -1,565 +1,541 @@
-{% extends "base.html" %} {% block title %}Editar Bot - {{ bot.bot_name }} -
-Telegram Bot Manager{% endblock %} {% block head %}
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-  rel="stylesheet"
-/>
-<style>
-  .page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0 0 20px 20px;
-  }
+{% extends "base_dark.html" %} 
+{% block title %}Editar Bot - BotManager{% endblock %} 
 
-  .bot-edit-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    background: white;
-  }
+{% block content %}
+<!-- Dashboard Header -->
+<header class="dashboard-header">
+  <div class="header-left">
+    <h1>
+      <i class="fas fa-edit me-3"></i>
+      Editar Bot
+    </h1>
+    <p>Atualize as configurações do seu bot Telegram</p>
+  </div>
+</header>
 
-  .section-header {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    padding: 1rem 1.5rem;
-    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
-    border-radius: 15px 15px 0 0;
-  }
-
-  .form-section {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-left: 4px solid #667eea;
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-  }
-
-  .btn {
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .btn:hover {
-    transform: translateY(-2px);
-  }
-
-  .group-id-input {
-    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-    font-size: 0.9rem;
-  }
-
-  .info-card {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-    border: none;
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-
-  .value-input-group {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid #dee2e6;
-  }
-</style>
-{% endblock %} {% block content %}
-<!-- Header da página -->
-<div class="page-header">
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="mb-2">
-          <i class="fas fa-edit me-3"></i>
-          Bot : {{bot.bot_username}} - ID: {{bot.id}}
-        </h1>
-      </div>
+<!-- Error Display -->
+<div id="errorDisplay" class="error-display" style="display: none;">
+  <div class="error-content">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div class="error-text">
+      <strong id="errorTitle">Erro ao atualizar bot</strong>
+      <span id="errorMessage"></span>
     </div>
+    <button type="button" onclick="hideError()">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
 </div>
 
-<div class="container">
-  <div class="card bot-edit-card ">
-    <div class="card-body p-4">
-      <form method="POST" enctype="multipart/form-data">
-        <!-- Seção: Informações Básicas -->
-        <div class="form-section">
-          <!-- Nome do Bot - Largura Total -->
-          <div class="mb-3">
-            <label for="name" class="form-label fw-bold">
-              <i class="fas fa-tag me-1"></i>Nome
-            </label>
-            <input
-              type="text"
-              class="form-control w-100"
-              id="name"
-              name="name"
-              value="{{ bot.bot_name }}"
-              required
-              autofocus
-              maxlength="100"
-              placeholder="Ex: Meu Bot de Vendas"
-            />
-          </div>
+<!-- Success Display -->
+<div id="successDisplay" class="success-display" style="display: none;">
+  <div class="success-content">
+    <i class="fas fa-check-circle"></i>
+    <div class="success-text">
+      <strong id="successTitle">Bot atualizado com sucesso!</strong>
+      <span id="successMessage">As configurações foram salvas. Redirecionando...</span>
+    </div>
+    <button type="button" onclick="hideSuccess()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
 
-          <!-- Token do Bot -->
-          <div class="mb-3">
-            <label for="token" class="form-label fw-bold">
-              <i class="fas fa-key me-1"></i>Token
+<!-- Edit Bot Form -->
+<div class="form-container">
+  <div class="stat-card">
+    <form method="POST" enctype="multipart/form-data" class="bot-form">
+      <!-- Informações Básicas -->
+      <div class="form-section">
+        <div class="form-group" id='mb'>
+          <label for="name" class="form-label">Nome do Bot</label>
+          <input
+            type="text"
+            class="form-input"
+            id="name"
+            name="name"
+            required
+            autofocus
+            maxlength="100"
+            value="{{ bot.bot_name or '' }}"
+            placeholder="Ex: Meu Bot de Vendas"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="token" class="form-label">
+            <i class="fas fa-key me-2"></i>
+            Token do Bot
+            <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            class="form-input"
+            id="token"
+            name="token"
+            required
+            value="{{ bot.bot_token or '' }}"
+            placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+          />
+          <small class="form-hint">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Token obtido do @BotFather no Telegram (alterar reiniciará o bot)
+          </small>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-group">
+          <label for="welcome_message" class="form-label">
+            Mensagem personalizada
+          </label>
+          <textarea
+            class="form-textarea"
+            id="welcome_message"
+            name="welcome_message"
+            rows="6"
+            placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
+          >{{ bot.welcome_message or '' }}</textarea>
+          <small class="form-hint"
+            >Mensagem que será enviada quando usuários iniciarem conversa com
+            /start</small
+          >
+        </div>
+      </div>
+
+      <!-- Mídia de Boas-vindas -->
+      <div class="form-section">
+        <div class="media-grid">
+          <!-- Mídia Principal (Imagem/Vídeo) -->
+          <div class="form-group">
+            <label for="welcome_image" class="form-label">
+              <i class="fas fa-photo-video me-2"></i>
+              Mídia de Boas-vindas
             </label>
-            <input
-              type="text"
-              class="form-control w-100"
-              id="token"
-              name="token"
-              value="{{ bot.bot_token }}"
-              required
-              placeholder="123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
-            />
-            <small class="form-text text-muted">
-              Token obtido do @BotFather no Telegram (⚠️ Alterar reiniciará o
-              bot)
+            
+            <!-- Status da mídia atual -->
+            <div id="currentMediaStatus" class="media-status-container">
+              {% if bot.welcome_image_file_id or bot.welcome_video_file_id %}
+              <div class="media-status has-media">
+                <div class="status-icon">
+                  <i class="fas fa-{{ 'video' if bot.welcome_video_file_id else 'image' }}"></i>
+                </div>
+                <div class="status-text">
+                  <strong>{{ 'Vídeo' if bot.welcome_video_file_id else 'Imagem' }} configurada</strong>
+                  <span>File ID: {{ bot.welcome_video_file_id or bot.welcome_image_file_id }}</span>
+                </div>
+              </div>
+              {% elif bot.welcome_image %}
+              <div class="media-status has-media-local">
+                <div class="status-icon">
+                  <i class="fas fa-file"></i>
+                </div>
+                <div class="status-text">
+                  <strong>Arquivo local</strong>
+                  <span>{{ bot.welcome_image }}</span>
+                </div>
+              </div>
+              {% else %}
+              <div class="media-status no-media">
+                <div class="status-icon">
+                  <i class="fas fa-image"></i>
+                </div>
+                <div class="status-text">
+                  <strong>Nenhuma mídia</strong>
+                  <span>Adicione uma imagem ou vídeo</span>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            
+            <!-- Input para nova mídia -->
+            <div class="file-input-wrapper">
+              <input
+                type="file"
+                class="form-file"
+                id="welcome_image"
+                name="welcome_image"
+                accept="image/*,video/*"
+                onchange="handleMediaUpload(this)"
+              />
+              <label for="welcome_image" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                <span class="upload-text">{{ 'Alterar Mídia' if (bot.welcome_image_file_id or bot.welcome_video_file_id or bot.welcome_image) else 'Escolher Mídia' }}</span>
+                <span class="upload-limit">(Máx: 25MB)</span>
+              </label>
+            </div>
+            
+            <!-- Preview da nova mídia -->
+            <div id="mediaPreview" class="media-preview" style="display: none;"></div>
+            
+            <small class="form-hint">
+              <strong>Formatos suportados:</strong><br>JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM<br>
+              <strong>Tamanho máximo:</strong> 25MB
             </small>
           </div>
 
-          <div class="mb-3">
-            <label for="welcome_message" class="form-label fw-bold">
-              Mensagem de Boas-vindas
+          <!-- Áudio -->
+          <div class="form-group">
+            <label for="welcome_audio" class="form-label">
+              <i class="fas fa-volume-up me-2"></i>
+              Áudio de Boas-vindas
             </label>
-            <textarea
-              class="form-control"
-              id="welcome_message"
-              name="welcome_message"
-              rows="8"
-              style="
-                min-height: 100px;
-                font-size: 14px;
-                line-height: 1.4;
-                padding: 8px 12px;
-              "
-              placeholder="Olá! Bem-vindo ao meu bot! Escolha um valor abaixo para fazer seu PIX:"
-            >
-{{ bot.welcome_message or '' }}</textarea
-            >
+            
+            <!-- Status do áudio atual -->
+            <div id="currentAudioStatus" class="media-status-container">
+              {% if bot.welcome_audio_file_id %}
+              <div class="media-status has-media">
+                <div class="status-icon">
+                  <i class="fas fa-music"></i>
+                </div>
+                <div class="status-text">
+                  <strong>Áudio configurado</strong>
+                  <span>File ID: {{ bot.welcome_audio_file_id }}</span>
+                </div>
+              </div>
+              {% elif bot.welcome_audio %}
+              <div class="media-status has-media-local">
+                <div class="status-icon">
+                  <i class="fas fa-file-audio"></i>
+                </div>
+                <div class="status-text">
+                  <strong>Arquivo local</strong>
+                  <span>{{ bot.welcome_audio }}</span>
+                </div>
+              </div>
+              {% else %}
+              <div class="media-status no-media">
+                <div class="status-icon">
+                  <i class="fas fa-music"></i>
+                </div>
+                <div class="status-text">
+                  <strong>Nenhum áudio</strong>
+                  <span>Adicione um arquivo de áudio</span>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            
+            <div class="file-input-wrapper">
+              <input
+                type="file"
+                class="form-file"
+                id="welcome_audio"
+                name="welcome_audio"
+                accept="audio/*"
+                onchange="handleAudioUpload(this)"
+              />
+              <label for="welcome_audio" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                <span class="upload-text">{{ 'Alterar Áudio' if (bot.welcome_audio_file_id or bot.welcome_audio) else 'Escolher Áudio' }}</span>
+                <span class="upload-limit">(Máx: 25MB)</span>
+              </label>
+            </div>
+            
+            <!-- Preview do novo áudio -->
+            <div id="audioPreview" class="media-preview" style="display: none;"></div>
+            
+            <small class="form-hint">
+              <strong>Formatos suportados:</strong> MP3, WAV, OGG, M4A, AAC<br>
+              <strong>Tamanho máximo:</strong> 25MB
+            </small>
           </div>
         </div>
+      </div>
+        
+      <!-- Planos e Configurações -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-money-bill-wave me-2"></i>
+          Planos
+          <span class="required">*</span>
+        </h3>
 
-        <!-- Seção: Mídia de Boas-vindas -->
-        <div class="form-section">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="welcome_image" class="form-label fw-bold">
-                  <i class="fas fa-image me-1"></i>Imagem de Boas-vindas
-                </label>
+        <div class="plans-container">
+          <div class="plans-header">
+            <div class="plan-col-name">Nome do Plano</div>
+            <div class="plan-col-value">Valor (R$)</div>
+            <div class="plan-col-duration">Duração</div>
+            <div class="plan-col-actions">Excluir</div>
+          </div>
+          <div id="plans-list">
+            {% set pix_values = bot.get_pix_values() %}
+            {% set plan_names = bot.get_plan_names() %}
+            {% set plan_durations = bot.get_plan_durations() %}
+            
+            {% for i in range(pix_values|length if pix_values else 3) %}
+            <div class="plan-item">
+              <div class="plan-col-name">
                 <input
-                  type="file"
-                  class="form-control"
-                  id="welcome_image"
-                  name="welcome_image"
-                  accept="image/*"
+                  type="text"
+                  class="form-input"
+                  name="plan_names[]"
+                  value="{{ plan_names[i] if plan_names and i < plan_names|length else ('Plano Básico' if i == 0 else 'Plano Premium' if i == 1 else 'Plano VIP') }}"
+                  maxlength="50"
                 />
-                {% if bot.welcome_image %}
-                <small class="form-text text-success">
-                  ✅ Imagem atual: {{ bot.welcome_image.split('/')[-1] }}
-                </small>
-                {% else %}
-                <small class="form-text text-muted">
-                  Nenhuma imagem configurada
-                </small>
+              </div>
+              <div class="plan-col-value">
+                <input
+                  type="number"
+                  class="form-input"
+                  name="pix_values[]"
+                  value="{{ pix_values[i] if pix_values and i < pix_values|length else (10.00 if i == 0 else 20.00 if i == 1 else 50.00) }}"
+                  step="0.01"
+                  min="0.01"
+                />
+              </div>
+              <div class="plan-col-duration">
+                <select class="form-select" name="plan_duration[]">
+                  {% set current_duration = plan_durations[i] if plan_durations and i < plan_durations|length else 'mensal' %}
+                  <option value="semanal" {{ 'selected' if current_duration == 'semanal' else '' }}>Semanal</option>
+                  <option value="quinzenal" {{ 'selected' if current_duration == 'quinzenal' else '' }}>Quinzenal</option>
+                  <option value="mensal" {{ 'selected' if current_duration == 'mensal' or not current_duration else '' }}>Mensal</option>
+                  <option value="trimestral" {{ 'selected' if current_duration == 'trimestral' else '' }}>Trimestral</option>
+                  <option value="semestral" {{ 'selected' if current_duration == 'semestral' else '' }}>Semestral</option>
+                  <option value="anual" {{ 'selected' if current_duration == 'anual' else '' }}>Anual</option>
+                  <option value="vitalicio" {{ 'selected' if current_duration == 'vitalicio' else '' }}>Vitalício</option>
+                </select>
+              </div>
+              <div class="plan-col-actions">
+                {% if loop.index > 1 %}
+                <button
+                  type="button"
+                  class="btn-remove"
+                  onclick="removePlan(this)"
+                  title="Remover plano"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
                 {% endif %}
               </div>
             </div>
-
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="welcome_audio" class="form-label fw-bold">
-                  <i class="fas fa-volume-up me-1"></i>Áudio de Boas-vindas
-                  (Opcional)
-                </label>
-                <input
-                  type="file"
-                  class="form-control"
-                  id="welcome_audio"
-                  name="welcome_audio"
-                  accept="audio/*"
-                />
-                {% if bot.welcome_audio %}
-                <small class="form-text text-success">
-                  ✅ Áudio atual: {{ bot.welcome_audio.split('/')[-1] }}
-                </small>
-                {% else %}
-                <small class="form-text text-muted">
-                  Nenhum áudio configurado
-                </small>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Seção: Planos e Valores PIX -->
-        <div class="form-section">
-          <div class="section-header">
-            <h5 class="mb-0">
-              <i class="fas fa-money-bill-wave me-2"></i>
-              Planos
-            </h5>
+            {% endfor %}
           </div>
 
-          <!-- Cabeçalho dos campos (apenas uma vez) -->
-          <div class="row mb-1 mt-3">
-            <div class="col-md-4">
-              <label class="form-label fw-bold"> Nome </label>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-bold"> Valor (R$) </label>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-bold"> Duração </label>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label fw-bold">Excluir</label>
-            </div>
-          </div>
-
-          <div id="plans-container">
-            {% set current_values = bot.get_pix_values() %} 
-            {% set current_names = bot.get_plan_names() %} 
-            {% set current_durations = bot.get_plan_durations() if bot.get_plan_durations else [] %}
-            {# Mostra apenas os valores/nomes que realmente existem #} 
-            {% set max_items = [current_values|length, current_names|length, current_durations|length, 1]|max %} 
-            {% for i in range(max_items) %}
-            <div class="value-input-group">
-              <div class="row align-items-center">
-                <div class="col-md-4">
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="plan_names[]"
-                    value="{{ current_names[i] if i < current_names|length else '' }}"
-                    placeholder="Plano Premium"
-                    maxlength="50"
-                  />
-                </div>
-                <div class="col-md-3">
-                  <input
-                    type="number"
-                    class="form-control"
-                    name="pix_values[]"
-                    value="{{ current_values[i] if i < current_values|length else '' }}"
-                    placeholder="19.90"
-                    step="1.00"
-                    min="1"
-                  />
-                </div>
-                <div class="col-md-3">
-                  <select class="form-select" name="plan_duration[]">
-                    <option value="">Selecione...</option>
-                    <option value="semanal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'semanal' else '' }}>Semanal</option>
-                    <option value="quinzenal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'quinzenal' else '' }}>Quinzenal</option>
-                    <option value="mensal" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'mensal' else '' }}>Mensal</option>
-                    <option value="trimestral" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'trimestral' else '' }}>Trimestral</option>
-                    <option value="semestral" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'semestral' else '' }}>Semestral</option>
-                    <option value="anual" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'anual' else '' }}>Anual</option>
-                    <option value="vitalicio" {{ 'selected' if current_durations and i < current_durations|length and current_durations[i] == 'vitalicio' else '' }}>Vitalício</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  {% if max_items > 1 %}
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm w-100"
-                    onclick="removePlan(this)"
-                  >
-                    <i class="fas fa-trash"></i>
-                  </button>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-            {% endfor %} {# Se não há nenhum valor, mostra pelo menos um campo
-            vazio #} {% if max_items == 0 %}
-            <div class="value-input-group">
-              <div class="row align-items-center">
-                <div class="col-md-5">
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="plan_names[]"
-                    placeholder="Plano Premium"
-                    maxlength="50"
-                  />
-                </div>
-                <div class="col-md-5">
-                  <input
-                    type="number"
-                    class="form-control"
-                    name="pix_values[]"
-                    placeholder="19.90"
-                    step="0.01"
-                    min="0.01"
-                  />
-                </div>
-                <div class="col-md-2"></div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="mt-3 mb-3">
-            <button
-              type="button"
-              class="btn btn-outline-primary"
-              onclick="addPlan()"
-            >
-              <i class="fas fa-plus me-2"></i>Adicionar Plano
+          <div class="add-plan-btn">
+            <button type="button" class="btn-secondary" onclick="addPlan()">
+              <i class="fas fa-plus me-2"></i>
+              Adicionar Plano
             </button>
           </div>
         </div>
+      </div>
 
-        <!-- Seção: Configurações de Grupos -->
-        <div class="form-section">
-          <div class="section-header">
-            <h5 class="mb-0">
-              <i class="fas fa-users me-2"></i>
-              Configurações de Grupos
-            </h5>
+      <!-- Configurações de Grupos -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-users me-2"></i>
+          Configurações de Grupos
+          <span class="required">*</span>
+        </h3>
+
+        <div class="groups-grid">
+          <div class="form-group">
+            <label for="id_vip" class="form-label">
+              <i class="fas fa-crown me-2"></i>
+              ID do Grupo VIP
+            </label>
+            <input
+              type="text"
+              class="form-input group-id-input"
+              id="id_vip"
+              name="id_vip"
+              value="{{ bot.id_vip or '' }}"
+              placeholder="-1001234567890"
+            />
+            <small class="form-hint">
+              Grupo onde os clientes serão adicionados após pagamento aprovado
+            </small>
           </div>
 
-          <div class="row mt-3">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="id_vip" class="form-label fw-bold">
-                  <i class="fas fa-crown me-1"></i>ID do Grupo VIP
-                </label>
-                <input
-                  type="text"
-                  class="form-control group-id-input"
-                  id="id_vip"
-                  name="id_vip"
-                  value="{{ bot.id_vip or '' }}"
-                  placeholder="-1001234567890"
-                />
-                <small class="form-text text-muted">
-                  Grupo onde os clientes serão adicionados após pagamento
-                  aprovado
-                </small>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="id_logs" class="form-label fw-bold">
-                  <i class="fas fa-clipboard-list me-1"></i>ID do Grupo de
-                  Notificações
-                </label>
-                <input
-                  type="text"
-                  class="form-control group-id-input"
-                  id="id_logs"
-                  name="id_logs"
-                  value="{{ bot.id_logs or '' }}"
-                  placeholder="-1001234567890"
-                />
-                <small class="form-text text-muted">
-                  Grupo onde serão enviadas notificações de pagamentos
-                </small>
-              </div>
-            </div>
+          <div class="form-group">
+            <label for="id_logs" class="form-label">
+              <i class="fas fa-clipboard-list me-2"></i>
+              ID do Grupo de Notificações
+            </label>
+            <input
+              type="text"
+              class="form-input group-id-input"
+              id="id_logs"
+              name="id_logs"
+              value="{{ bot.id_logs or '' }}"
+              placeholder="-1001234567890"
+            />
+            <small class="form-hint">
+              Grupo onde serão enviadas notificações de pagamentos
+            </small>
           </div>
+        </div>
 
-          <div class="info-card">
-            <h6>
-              <i class="fas fa-lightbulb me-2"></i>Como obter o ID do grupo:
-            </h6>
-            <ol class="mb-0 small">
-              <li>Pesquise @chat_id_echo_bot no seu telegram</li>
+        <div class="info-cards">
+          <div class="info-card warning">
+            <div class="info-header">
+              <i class="fas fa-lightbulb me-2"></i>
+              Como obter o ID do grupo
+            </div>
+            <ol class="info-list">
+              <li>Pesquise <code>@chat_id_echo_bot</code> no seu Telegram</li>
               <li>Digite <code>/start</code> e selecione no grupo ou canal</li>
               <li>O bot retornará o ID do grupo (ex: -1001234567890)</li>
             </ol>
           </div>
-        </div>
 
-        <!-- Status do Bot -->
-        <div class="info-card mb-4">
-          <div class="row align-items-center">
-            <div class="col-md-8">
-              <h6><i class="fas fa-info-circle me-2"></i>Status do Bot</h6>
-              <p class="mb-0">
-                <span
-                  class="badge bg-{{ 'success' if bot.is_running else 'secondary' }} me-2"
-                >
-                  {{ 'Online' if bot.is_running else 'Offline' }}
-                </span>
-                {% if bot.is_fully_configured() %}
-                <span class="badge bg-success">Totalmente Configurado</span>
-                {% else %}
-                <span class="badge bg-warning">Configuração Incompleta</span>
-                {% endif %}
-              </p>
+          <div class="info-card info">
+            <div class="info-header">
+              <i class="fas fa-info-circle me-2"></i>
+              Status do Bot
             </div>
-            <div class="col-md-4 text-end">
-              <small class="text-muted">
-                Criado em: {{ bot.created_at.strftime('%d/%m/%Y') if
-                bot.created_at else 'N/A' }}
-              </small>
-            </div>
+            <p>
+              <strong>Status:</strong> {{ bot.get_status() }}<br>
+              <strong>Criado em:</strong> {{ bot.created_at.strftime('%d/%m/%Y às %H:%M') if bot.created_at else 'Data não disponível' }}<br>
+              <strong>Última atividade:</strong> {{ bot.last_activity.strftime('%d/%m/%Y às %H:%M') if bot.last_activity else 'Nunca' }}
+            </p>
           </div>
         </div>
+      </div>
 
-        <!-- Botões de Ação -->
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-          <a
-            href="{{ url_for('bots.list_bots') }}"
-            class="btn btn-secondary me-md-2"
-          >
-            <i class="fas fa-times me-2"></i>Cancelar
-          </a>
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-save me-2"></i>Salvar Alterações
-          </button>
-        </div>
-      </form>
-    </div>
+      <!-- Botões de Ação -->
+      <div class="form-actions">
+        <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary" id="cancelBtn">
+          <i class="fas fa-arrow-left me-2"></i>
+          Voltar
+        </a>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <i class="fas fa-save me-2"></i>
+          <span id="submitText">Salvar Alterações</span>
+          <div class="btn-spinner" style="display: none;"></div>
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-  // Conta o número atual de planos carregados
-  let planCount = document.querySelectorAll(".value-input-group").length;
-
-  function addPlan() {
-    if (planCount >= 10) {
-      alert("Máximo de 10 planos permitidos");
-      return;
-    }
-
-    const container = document.getElementById("plans-container");
-    const newPlan = document.createElement("div");
-    newPlan.className = "value-input-group";
-
-    newPlan.innerHTML = `
-    <div class="row align-items-center">
-      <div class="col-md-4">
-        <input
-          type="text"
-          class="form-control"
-          name="plan_names[]"
-          placeholder="Plano Premium"
-          maxlength="50"
-        />
-      </div>
-      <div class="col-md-3">
-        <input
-          type="number"
-          class="form-control"
-          name="pix_values[]"
-          placeholder="19.90"
-          step="1.00"
-          min="1"
-        />
-      </div>
-      <div class="col-md-3">
-        <select class="form-select" name="plan_duration[]">
-          <option value="">Selecione...</option>
-          <option value="semanal">Semanal</option>
-          <option value="quinzenal">Quinzenal</option>
-          <option value="mensal">Mensal</option>
-          <option value="trimestral">Trimestral</option>
-          <option value="semestral">Semestral</option>
-          <option value="anual">Anual</option>
-          <option value="vitalicio">Vitalício</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePlan(this)">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `;
-
-    container.appendChild(newPlan);
-    planCount++;
-    updateRemoveButtons();
+  // Função para formatar tamanho do arquivo
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  function removePlan(button) {
-    const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll(".value-input-group");
-
-    // Não permite remover se há apenas um plano
-    if (plans.length <= 1) {
-      alert("Deve haver pelo menos um plano configurado!");
-      return;
+  // Função para lidar com upload de mídia (imagem/vídeo)
+  function handleMediaUpload(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('mediaPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    if (file) {
+      // Atualizar o visual do botão
+      uploadText.textContent = file.name;
+      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+      fileLabel.classList.add('file-selected');
+      
+      // Mostrar preview
+      previewContainer.style.display = 'block';
+      
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      let previewHTML = `
+        <div class="file-info">
+          <div class="file-icon">
+            <i class="fas fa-${isImage ? 'image' : isVideo ? 'video' : 'file'}"></i>
+          </div>
+          <div class="file-details">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+          </div>
+          <button type="button" class="remove-file-btn" onclick="clearMediaSelection()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewHTML += `<img src="${e.target.result}" alt="Preview" class="media-preview-img">`;
+          previewContainer.innerHTML = previewHTML;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.innerHTML = previewHTML;
+      }
     }
-
-    const planGroup = button.closest(".value-input-group");
-    planGroup.remove();
-    planCount--;
-    updateRemoveButtons();
   }
 
-  function updateRemoveButtons() {
-    const container = document.getElementById("plans-container");
-    const plans = container.querySelectorAll(".value-input-group");
-    const removeButtons = container.querySelectorAll(".btn-outline-danger");
-
-    // Mostra/esconde botões de remover baseado no número de planos
-    removeButtons.forEach((button) => {
-      button.style.display = plans.length > 1 ? "block" : "none";
-    });
+  // Função para lidar com upload de áudio
+  function handleAudioUpload(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('audioPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    if (file) {
+      // Atualizar o visual do botão
+      uploadText.textContent = file.name;
+      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+      fileLabel.classList.add('file-selected');
+      
+      // Mostrar preview
+      previewContainer.style.display = 'block';
+      previewContainer.innerHTML = `
+        <div class="file-info">
+          <div class="file-icon">
+            <i class="fas fa-music"></i>
+          </div>
+          <div class="file-details">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+          </div>
+          <button type="button" class="remove-file-btn" onclick="clearAudioSelection()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <audio controls class="audio-preview">
+          <source src="${URL.createObjectURL(file)}" type="${file.type}">
+          Seu navegador não suporta o elemento de áudio.
+        </audio>
+      `;
+    }
   }
 
-  // Inicializa os botões de remover quando a página carrega
-  document.addEventListener("DOMContentLoaded", function () {
-    updateRemoveButtons();
-  });
+  // Função para limpar seleção de mídia
+  function clearMediaSelection() {
+    const input = document.getElementById('welcome_image');
+    const previewContainer = document.getElementById('mediaPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    input.value = '';
+    previewContainer.style.display = 'none';
+    previewContainer.innerHTML = '';
+    uploadText.textContent = 'Alterar Mídia';
+    uploadLimit.textContent = '(Máx: 25MB)';
+    fileLabel.classList.remove('file-selected');
+  }
 
-  // Validação do formulário
-  document.querySelector("form").addEventListener("submit", function (e) {
-    const pixInputs = document.querySelectorAll('input[name="pix_values[]"]');
-    const hasValue = Array.from(pixInputs).some(
-      (input) => input.value && parseFloat(input.value) > 0
-    );
-
-    if (!hasValue) {
-      e.preventDefault();
-      alert("Configure pelo menos um valor PIX para o seu bot!");
-      return;
-    }
-
-    // Verificar token
-    const token = document.getElementById("token").value;
-    const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
-
-    if (!tokenPattern.test(token)) {
-      e.preventDefault();
-      alert(
-        "Token do bot inválido! Verifique se copiou corretamente do @BotFather."
-      );
-      return;
-    }
-  });
+  // Função para limpar seleção de áudio
+  function clearAudioSelection() {
+    const input = document.getElementById('welcome_audio');
+    const previewContainer = document.getElementById('audioPreview');
+    const fileLabel = input.nextElementSibling;
+    const uploadText = fileLabel.querySelector('.upload-text');
+    const uploadLimit = fileLabel.querySelector('.upload-limit');
+    
+    input.value = '';
+    previewContainer.style.display = 'none';
+    previewContainer.innerHTML = '';
+    uploadText.textContent = 'Alterar Áudio';
+    uploadLimit.textContent = '(Máx: 25MB)';
+    fileLabel.classList.remove('file-selected');
+  }
 
   // Auto-formatação dos IDs de grupo
   function formatGroupId(input) {
@@ -577,5 +553,717 @@ Telegram Bot Manager{% endblock %} {% block head %}
   document.getElementById("id_logs").addEventListener("input", function () {
     formatGroupId(this);
   });
+
+  // Gerenciamento de planos (mesmo código do create)
+  let planCount = document.querySelectorAll(".plan-item").length;
+
+  function addPlan() {
+    if (planCount >= 10) {
+      alert("Máximo de 10 planos permitidos");
+      return;
+    }
+
+    const container = document.getElementById("plans-list");
+    const newPlan = document.createElement("div");
+    newPlan.className = "plan-item";
+
+    newPlan.innerHTML = `
+      <div class="plan-col-name">
+        <input
+          type="text"
+          class="form-input"
+          name="plan_names[]"
+          placeholder="Novo Plano"
+          maxlength="50"
+        />
+      </div>
+      <div class="plan-col-value">
+        <input
+          type="number"
+          class="form-input"
+          name="pix_values[]"
+          placeholder="19.90"
+          step="0.01"
+          min="0.01"
+        />
+      </div>
+      <div class="plan-col-duration">
+        <select class="form-select" name="plan_duration[]">
+          <option value="">Selecione...</option>
+          <option value="semanal">Semanal</option>
+          <option value="quinzenal">Quinzenal</option>
+          <option value="mensal" selected>Mensal</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option>
+          <option value="anual">Anual</option>
+          <option value="vitalicio">Vitalício</option>
+        </select>
+      </div>
+      <div class="plan-col-actions">
+        <button type="button" class="btn-remove" onclick="removePlan(this)" title="Remover plano">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+
+    container.appendChild(newPlan);
+    planCount++;
+    updateRemoveButtons();
+  }
+
+  function removePlan(button) {
+    const container = document.getElementById("plans-list");
+    const plans = container.querySelectorAll(".plan-item");
+
+    if (plans.length <= 1) {
+      alert("Deve haver pelo menos um plano configurado!");
+      return;
+    }
+
+    const planItem = button.closest(".plan-item");
+    planItem.remove();
+    planCount--;
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons() {
+    const container = document.getElementById("plans-list");
+    const plans = container.querySelectorAll(".plan-item");
+    const removeButtons = container.querySelectorAll(".btn-remove");
+
+    removeButtons.forEach((button) => {
+      button.style.display = plans.length > 1 ? "inline-flex" : "none";
+    });
+  }
+
+  // Funções de notificação
+  function showError(title, message) {
+    document.getElementById('errorTitle').textContent = title;
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorDisplay').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function hideError() {
+    document.getElementById('errorDisplay').style.display = 'none';
+  }
+
+  function showSuccess(title, message) {
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMessage').textContent = message;
+    document.getElementById('successDisplay').style.display = 'block';
+  }
+
+  function hideSuccess() {
+    document.getElementById('successDisplay').style.display = 'none';
+  }
+
+  // Inicializar quando página carrega
+  document.addEventListener("DOMContentLoaded", function () {
+    updateRemoveButtons();
+  });
 </script>
+
+{% endblock %} 
+
+{% block scripts %}
+<style>
+  /* Usar o mesmo CSS do create.html */
+  .form-container {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .form-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+  }
+
+  .bot-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .form-section {
+    background: var(--section-bg);
+    border-radius: 16px;
+    padding: 1.0rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .section-title i {
+    color: var(--primary-color);
+  }
+
+  .required {
+    color: #ef4444;
+    font-weight: 700;
+  }
+
+  .form-label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    outline: 1px solid white;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.5;
+  }
+
+  .form-hint {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .group-id-input {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.9rem;
+  }
+
+  /* Media Status Styles */
+  .media-status-container {
+    margin-bottom: 1rem;
+  }
+
+  .media-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+  }
+
+  .media-status.has-media {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .media-status.has-media-local {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .media-status.no-media {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  .media-status .status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .media-status.has-media .status-icon {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+  }
+
+  .media-status.has-media-local .status-icon {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+  }
+
+  .media-status.no-media .status-icon {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+  }
+
+  .media-status .status-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .media-status .status-text strong {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .media-status .status-text span {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-family: monospace;
+  }
+
+  /* Media Upload Styles */
+  .media-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .file-input-wrapper {
+    position: relative;
+  }
+
+  .form-file {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .file-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .file-label:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(139, 92, 246, 0.05);
+  }
+
+  .file-label.file-selected {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+
+  .file-label.file-selected:hover {
+    background: rgba(139, 92, 246, 0.15);
+  }
+
+  .media-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+  }
+
+  .file-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .file-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    word-break: break-all;
+  }
+
+  .file-size {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .remove-file-btn {
+    width: 28px;
+    height: 28px;
+    background: #ef4444;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .remove-file-btn:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+  }
+
+  .media-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .audio-preview {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* Plans Styles (mesmo do create) */
+  .plans-container {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plans-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--section-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .plan-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plan-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .btn-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+  }
+
+  .btn-remove:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  .add-plan-btn {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  /* Groups Grid */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Info Cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .info-card {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .info-card.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .info-card.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .info-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .info-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .info-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .btn-secondary {
+    background: var(--secondary-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-secondary:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+  }
+
+  /* Error/Success Display (mesmo do create) */
+  .error-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(239, 68, 68, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .error-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .error-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .error-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .error-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .success-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(34, 197, 94, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: slideInRight 0.4s ease-out;
+  }
+
+  .success-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .success-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .success-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .success-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Button Loading State */
+  .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 0.5rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-container {
+      padding: 1rem;
+    }
+
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .media-grid,
+    .groups-grid,
+    .info-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .plans-header,
+    .plan-item {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .plan-col-actions {
+      justify-self: end;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    .error-display,
+    .success-display {
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      max-width: none;
+    }
+
+    #mb{
+      margin-bottom: 5px;
+    }
+  }
+</style>
 {% endblock %}

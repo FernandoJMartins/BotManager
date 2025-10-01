@@ -5,8 +5,8 @@ class TelegramBot(db.Model):
     __tablename__ = 'telegram_bots'
     
     id = db.Column(db.Integer, primary_key=True)
-    bot_token = db.Column(db.String(255), unique=True, nullable=False)
-    bot_username = db.Column(db.String(100), nullable=True)
+    bot_token = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    bot_username = db.Column(db.String(100), nullable=True)  # Pode ser None
     bot_name = db.Column(db.String(100), nullable=True)
     
     # Configurações do bot
@@ -183,5 +183,57 @@ class TelegramBot(db.Model):
             'identifier': self.get_media_identifier()
         }
     
+    def get_username_formatted(self) -> str:
+        """Retorna o username formatado com @ se não tiver"""
+        if not self.bot_username:
+            return "Bot sem username"
+        
+        username = self.bot_username.strip()
+        if username and not username.startswith('@'):
+            return f"@{username}"
+        return username
+    
+    def get_username_clean(self) -> str:
+        """Retorna o username sem @ para uso em APIs"""
+        if not self.bot_username:
+            return ""
+        
+        return self.bot_username.replace('@', '').strip()
+    
+    def set_username_from_telegram(self, telegram_username: str):
+        """Define o username a partir dos dados do Telegram"""
+        if telegram_username:
+            username = telegram_username.strip()
+            if not username.startswith('@'):
+                username = f"@{username}"
+            self.bot_username = username
+    
+    def __init__(self, **kwargs):
+        """Inicialização customizada para validar dados"""
+        # Import do logger dentro do método para evitar imports circulares
+        try:
+            from ..utils.logger import logger
+            logger.info(f"🏗️ Criando TelegramBot com dados: {kwargs}")
+        except ImportError:
+            print(f"🏗️ Criando TelegramBot com dados: {kwargs}")
+        
+        # Chama o init da classe pai
+        super().__init__(**kwargs)
+        
+        # Log dos dados após inicialização
+        try:
+            from ..utils.logger import logger
+            logger.info(f"🏗️ TelegramBot criado:")
+            logger.info(f"   - Token: {self.bot_token[:10] if self.bot_token else 'None'}...")
+            logger.info(f"   - Username: {self.bot_username}")
+            logger.info(f"   - Name: {self.bot_name}")
+            logger.info(f"   - User ID: {self.user_id}")
+        except ImportError:
+            print(f"🏗️ TelegramBot criado:")
+            print(f"   - Token: {self.bot_token[:10] if self.bot_token else 'None'}...")
+            print(f"   - Username: {self.bot_username}")
+            print(f"   - Name: {self.bot_name}")
+            print(f"   - User ID: {self.user_id}")
+    
     def __repr__(self):
-        return f"TelegramBot(username={self.bot_username}, active={self.is_active})"
+        return f"TelegramBot(username={self.get_username_formatted()}, active={self.is_active})"

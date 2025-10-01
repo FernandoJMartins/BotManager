@@ -216,10 +216,20 @@ def create_bot():
 
             # Cria o bot PRIMEIRO
             logger.info("💾 Criando registro do bot no banco de dados...")
+            
+            # Extrair username real do bot (com @)
+            bot_real_username = validation_result.get('username', '')
+            if bot_real_username and not bot_real_username.startswith('@'):
+                bot_real_username = f"@{bot_real_username}"
+            
+            logger.info(f"🤖 Username real do bot: {bot_real_username}")
+            logger.info(f"📝 Nome do bot: {validation_result.get('first_name', '')}")
+            logger.info(f"🔑 Bot ID: {validation_result.get('id', '')}")
+            
             bot = TelegramBot(
                 bot_token=token,
-                bot_username=validation_result['username'],
-                bot_name=name or validation_result['first_name'],
+                bot_username=bot_real_username or None,  # Username com @ (ex: @meubot)
+                bot_name=name or validation_result.get('first_name', ''),  # Nome amigável
                 welcome_message=welcome_message,
                 pix_values=pix_values_json,
                 plan_names=plan_names_json,
@@ -230,19 +240,37 @@ def create_bot():
                 is_active=True
             )
             
-            # Adiciona ao banco e força commit para obter ID
-            db.session.add(bot)
-            db.session.flush()  # Obtém ID sem fazer commit completo
+            logger.info("📋 Dados do bot a ser criado:")
+            logger.info(f"   - Token: {token[:10]}...")
+            logger.info(f"   - Username: {bot.bot_username}")
+            logger.info(f"   - Name: {bot.bot_name}")
+            logger.info(f"   - User ID: {bot.user_id}")
+            logger.info(f"   - VIP Group: {bot.id_vip}")
+            logger.info(f"   - Logs Group: {bot.id_logs}")
             
-            bot_id = bot.id
-            logger.info(f"✅ Bot criado no banco com ID: {bot_id}")
+            # Adiciona ao banco e força commit para obter ID
+            try:
+                db.session.add(bot)
+                db.session.flush()  # Obtém ID sem fazer commit completo
+                logger.info(f"✅ Bot adicionado à sessão do banco")
+                
+                bot_id = bot.id
+                logger.info(f"✅ Bot criado no banco com ID: {bot_id}")
+                
+                if not bot_id:
+                    raise Exception("ID do bot não foi gerado após flush()")
+                    
+            except Exception as db_error:
+                logger.error(f"❌ ERRO ao salvar bot no banco: {db_error}")
+                logger.error(f"❌ Tipo do erro: {type(db_error)}")
+                db.session.rollback()
+                raise Exception(f"Falha ao salvar bot no banco de dados: {str(db_error)}")
 
             # AGORA processa os arquivos com o ID do bot
             media_processed = False
             audio_processed = False
             
             # IMPORTANTE: Processa os arquivos em SEQUÊNCIA para evitar conflitos no Telegram API
-            
             # Processa MÍDIA (imagem/vídeo) primeiro
             if media_file and media_file.filename and allowed_file(media_file.filename):
                 logger.info(f"🖼️ INICIANDO processamento de mídia: {media_file.filename}")
@@ -375,6 +403,7 @@ def create_bot():
                                 logger.error(f"❌ FALHA no fallback também: {fallback_error}")
                                 media_processed = False
                             
+
                         finally:
                             # Sempre limpa arquivo temporário
                             try:
