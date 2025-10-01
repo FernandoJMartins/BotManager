@@ -303,7 +303,7 @@ def create_app():
                 day = datetime.strptime(end_date, '%Y-%m-%d') - timedelta(days=6-i)
                 days.append(day.strftime('%d/%m'))
                 # Valores simulados baseados no revenue líquido real
-                base_net = net_revenue / 7 if net_revenue > 0 else 35  # Revenue líquido médio por dia
+                base_net = net_revenue / 7 if net_revenue > 0 else 0  # Revenue líquido médio por dia
                 revenue_values.append(base_net)
                 fees_values.append(0)  # Não vamos mostrar fees no gráfico
             

@@ -11,6 +11,34 @@ endblock %} {% block content %}
   </div>
 </header>
 
+      <!-- Error Display -->
+<div id="errorDisplay" class="error-display" style="display: none;">
+  <div class="error-content">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div class="error-text">
+      <strong id="errorTitle">Erro ao validar bot</strong>
+      <span id="errorMessage"></span>
+    </div>
+    <button type="button" onclick="hideError()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Success Display -->
+<div id="successDisplay" class="success-display" style="display: none;">
+  <div class="success-content">
+    <i class="fas fa-check-circle"></i>
+    <div class="success-text">
+      <strong id="successTitle">Bot criado com sucesso!</strong>
+      <span id="successMessage">Seu bot foi configurado e está ativo. Redirecionando...</span>
+    </div>
+    <button type="button" onclick="hideSuccess()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
 <!-- Create Bot Form -->
 <div class="form-container">
   <div class="stat-card">
@@ -18,7 +46,7 @@ endblock %} {% block content %}
       <!-- Informações Básicas -->
       <div class="form-section">
 
-        <div class="form-group">
+        <div class="form-group" id='mb'>
           <label for="name" class="form-label"> Nome do Bot </label>
           <input
             type="text"
@@ -77,7 +105,7 @@ endblock %} {% block content %}
         <div class="media-grid">
           <!-- Mídia Principal (Imagem/Vídeo) -->
           <div class="form-group">
-            <label for="welcome_media" class="form-label">
+            <label for="welcome_image" class="form-label">
               <i class="fas fa-photo-video me-2"></i>
               Mídia de Boas-vindas
             </label>
@@ -95,12 +123,12 @@ endblock %} {% block content %}
               <input
                 type="file"
                 class="form-file"
-                id="welcome_media"
-                name="welcome_media"
+                id="welcome_image"
+                name="welcome_image"
                 accept="image/*,video/*"
                 onchange="handleMediaUpload(this)"
               />
-              <label for="welcome_media" class="file-label">
+              <label for="welcome_image" class="file-label">
                 <i class="fas fa-cloud-upload-alt me-2"></i>
                 <span class="upload-text">Escolher Mídia</span>
                 <span class="upload-limit">(Máx: 25MB)</span>
@@ -398,33 +426,7 @@ endblock %} {% block content %}
         </div>
       </div>
 
-      <!-- Error Display -->
-<div id="errorDisplay" class="error-display" style="display: none;">
-  <div class="error-content">
-    <i class="fas fa-exclamation-triangle"></i>
-    <div class="error-text">
-      <strong id="errorTitle">Erro ao validar bot</strong>
-      <span id="errorMessage"></span>
-    </div>
-    <button type="button" onclick="hideError()">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-</div>
 
-<!-- Success Display -->
-<div id="successDisplay" class="success-display" style="display: none;">
-  <div class="success-content">
-    <i class="fas fa-check-circle"></i>
-    <div class="success-text">
-      <strong id="successTitle">Bot criado com sucesso!</strong>
-      <span id="successMessage">Seu bot foi configurado e está ativo. Redirecionando...</span>
-    </div>
-    <button type="button" onclick="hideSuccess()">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-</div>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay" style="display: none;">
@@ -781,36 +783,128 @@ endblock %} {% block content %}
       document.getElementById('loadingTitle').textContent = 'Criando seu bot...';
       document.getElementById('loadingMessage').textContent = 'Salvando configurações no banco de dados...';
       
+      // Validações específicas para arquivos
+      const mediaFile = document.getElementById('welcome_image').files[0];
+      const audioFile = document.getElementById('welcome_audio').files[0];
+      
+      if (mediaFile && mediaFile.size > 25 * 1024 * 1024) {
+        throw new Error('Arquivo de mídia muito grande (máx 25MB)');
+      }
+      
+      if (audioFile && audioFile.size > 25 * 1024 * 1024) {
+        throw new Error('Arquivo de áudio muito grande (máx 25MB)');
+      }
+      
+      // Log detalhado do que está sendo enviado
+      console.log('Enviando dados do formulário:', {
+        name: document.getElementById('name').value,
+        token: document.getElementById('token').value.substring(0, 10) + '...',
+        id_vip: idVip,
+        id_logs: idLogs,
+        mediaFile: mediaFile ? `${mediaFile.name} (${formatFileSize(mediaFile.size)})` : 'Nenhum',
+        audioFile: audioFile ? `${audioFile.name} (${formatFileSize(audioFile.size)})` : 'Nenhum',
+        plansCount: document.querySelectorAll('.plan-item').length
+      });
+      
       // Enviar formulário
       const formData = new FormData(this);
+      
+      // Log dos dados do FormData para debug
+      console.log('FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        if (key === 'token') {
+          console.log(key + ':', value.substring(0, 10) + '...');
+        } else if (value instanceof File) {
+          console.log(key + ':', `File: ${value.name} (${formatFileSize(value.size)})`);
+        } else {
+          console.log(key + ':', value);
+        }
+      }
       
       const response = await fetch(this.action || window.location.href, {
         method: 'POST',
         body: formData
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
+        // Tentar ler a resposta como JSON para ver se há dados do bot criado
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        let botData = null;
+        try {
+          botData = JSON.parse(responseText);
+          console.log('Bot data from server:', botData);
+        } catch (e) {
+          console.log('Response não é JSON válido');
+        }
+        
         updateLoadingStep(4, 'completed');
         hideLoading();
         
-        // Mostrar mensagem de sucesso
+        // Mostrar mensagem de sucesso com mais detalhes
+        const botName = document.getElementById('name').value;
         showSuccess(
           'Bot criado com sucesso! 🎉',
-          `Seu bot "${document.getElementById('name').value}" foi configurado e está ativo. Redirecionando para o dashboard...`
+          `Bot "${botName}" foi salvo no banco de dados e está configurado. Redirecionando...`
         );
         
-        // Redirecionar após 3 segundos
-        setTimeout(() => {
+        // Verificar se o bot foi realmente criado fazendo uma validação adicional
+        setTimeout(async () => {
+          try {
+            // Tentar fazer uma requisição de teste ao bot para confirmar que está funcionando
+            const testResponse = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+            const testData = await testResponse.json();
+            
+            if (testData.ok) {
+              console.log('Bot está respondendo corretamente:', testData.result);
+            } else {
+              console.error('Bot não está respondendo:', testData);
+            }
+          } catch (error) {
+            console.error('Erro ao testar bot:', error);
+          }
+          
+          // Redirecionar mesmo assim
           window.location.href = response.url || '{{ url_for("main.dashboard") }}';
-        }, 3000);
+        }, 2000);
+        
       } else {
+        // Tentar obter mais detalhes do erro
         const errorText = await response.text();
-        throw new Error(`Erro no servidor: ${response.status}`);
+        console.error('Error response:', errorText);
+        
+        // Tentar extrair erro específico do HTML/JSON de resposta
+        let errorMessage = `Erro HTTP ${response.status}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) {
+            errorMessage = errorJson.error;
+          }
+        } catch (e) {
+          // Se não for JSON, tentar extrair do HTML
+          if (errorText.includes('IntegrityError')) {
+            errorMessage = 'Bot com esse token já existe no sistema';
+          } else if (errorText.includes('ValidationError')) {
+            errorMessage = 'Dados do formulário inválidos';
+          } else if (errorText.includes('DatabaseError')) {
+            errorMessage = 'Erro ao salvar no banco de dados';
+          } else if (errorText.includes('FileNotFoundError')) {
+            errorMessage = 'Erro ao processar arquivos de mídia';
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
       
     } catch (error) {
       hideLoading();
       console.error('Erro completo:', error);
+      console.error('Stack trace:', error.stack);
       
       let errorTitle = "Erro de Validação";
       let errorMessage = error.message;
@@ -824,12 +918,21 @@ endblock %} {% block content %}
       } else if (error.message.includes('grupo de notificações')) {
         errorTitle = "Problema no Grupo de Notificações";
         errorMessage = `Checklist para corrigir:\n1. Adicione o bot no grupo de notificações\n2. Vá em: Configurações do Grupo → Administradores → Adicionar Admin\n3. Selecione seu bot e dê permissões de admin\n4. Verifique se o ID do grupo está correto: ${idLogs}\n\n💡 Dica: Teste enviando uma mensagem no grupo. Se o bot não responder, ele não está lá.`;
+      } else if (error.message.includes('já existe')) {
+        errorTitle = "Bot Já Existe";
+        errorMessage = "Já existe um bot cadastrado com esse token. Use um token diferente ou delete o bot existente.";
+      } else if (error.message.includes('banco de dados')) {
+        errorTitle = "Erro no Banco de Dados";
+        errorMessage = "Erro ao salvar no banco de dados. Verifique:\n• Se o servidor está funcionando\n• Se há espaço em disco\n• Tente novamente em alguns minutos";
+      } else if (error.message.includes('arquivo') || error.message.includes('mídia')) {
+        errorTitle = "Erro nos Arquivos";
+        errorMessage = "Problema com os arquivos de mídia:\n• Verifique se os arquivos não estão corrompidos\n• Certifique-se de que não excedem 25MB\n• Use formatos suportados (JPG, PNG, MP4, MP3)";
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         errorTitle = "Erro de Conexão";
-        errorMessage = "Não foi possível conectar com o Telegram. Verifique sua conexão com a internet e tente novamente.";
-      } else if (error.message.includes('Forbidden') || error.message.includes('403')) {
-        errorTitle = "Acesso Negado";
-        errorMessage = "O bot não tem permissão para acessar os grupos. Certifique-se de que:\n• O bot está nos grupos\n• O bot é administrador\n• Os grupos não são privados demais\n• Você não bloqueou o bot";
+        errorMessage = "Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente.";
+      } else if (error.message.includes('500') || error.message.includes('Internal Server')) {
+        errorTitle = "Erro do Servidor";
+        errorMessage = "Erro interno do servidor. O desenvolvedor precisa verificar os logs do servidor.";
       }
 
       showError(errorTitle, errorMessage);
@@ -940,7 +1043,7 @@ endblock %} {% block content %}
 
   // Função para limpar seleção de mídia
   function clearMediaSelection() {
-    const input = document.getElementById('welcome_media');
+    const input = document.getElementById('welcome_image');
     const previewContainer = document.getElementById('mediaPreview');
     const fileLabel = input.nextElementSibling;
     const uploadText = fileLabel.querySelector('.upload-text');
@@ -949,7 +1052,7 @@ endblock %} {% block content %}
     input.value = '';
     previewContainer.style.display = 'none';
     previewContainer.innerHTML = '';
-    uploadText.textContent = 'Escolher Imagem ou Vídeo';
+    uploadText.textContent = 'Escolher Mídia';
     uploadLimit.textContent = '(Máx: 25MB)';
     fileLabel.classList.remove('file-selected');
   }
@@ -1516,6 +1619,13 @@ endblock %} {% block content %}
       left: 10px;
       max-width: none;
     }
+
+    #mb{
+    margin-bottom: 5px;
   }
+  }
+
+
+
 </style>
 {% endblock %}
