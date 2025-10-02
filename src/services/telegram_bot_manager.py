@@ -986,7 +986,6 @@ Entre em contato com o suporte."""
 💵 Valor Líquido: R${net_value:.2f}
 ⏳ Tempo Conversão: {conversion_time}
 🔖 Código de Venda: {sale_code}
-🔑 ID Transação: {payment.pix_code if payment else 'N/A'}
 🏷️ ID Gateway: {user_info.get('gateway_id', payment.pix_code if payment else 'N/A')}
 💱 Moeda: BRL
 💳 Método: PIX
@@ -1127,10 +1126,8 @@ Entre em contato com o suporte."""
                 else:
                     conversion_time = "0d 0h 0m 0s"
                 
-                # Código de venda baseado nos parâmetros UTM
-                utm_campaign = codigo_venda.utm_campaign or 'direct'
-                utm_source = codigo_venda.utm_source or 'telegram'
-                sale_code = f"{utm_campaign}_{utm_source}_{codigo_venda.id}"
+
+                sale_code = codigo_venda.unique_click_id
                 
                 return {
                     'conversion_time': conversion_time,
