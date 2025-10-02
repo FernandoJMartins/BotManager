@@ -10,7 +10,15 @@ class Payment(db.Model):
     status = db.Column(db.String(50), default='pending')  # pending, completed, failed, expired
     payment_platform = db.Column(db.String(50), default='pushinpay')  # pushinpay, mercadopago, stripe, etc.
     
-    # Informações do cliente final serão capturadas via webhook
+    # Informações do usuário do Telegram que fez o pagamento
+    telegram_user_id = db.Column(db.BigInteger, nullable=True)  # ID do usuário no Telegram
+    telegram_username = db.Column(db.String(100), nullable=True)  # Username do Telegram (@username)
+    telegram_first_name = db.Column(db.String(100), nullable=True)  # Primeiro nome
+    telegram_last_name = db.Column(db.String(100), nullable=True)  # Último nome
+    
+    # Informações reais do pagador (vindas da PushinPay via webhook)
+    payer_name = db.Column(db.String(200), nullable=True)  # Nome completo real do pagador
+    payer_cpf = db.Column(db.String(14), nullable=True)  # CPF do pagador
     
     # Dados do PIX
     pix_key = db.Column(db.String(255), nullable=True)
@@ -49,7 +57,8 @@ class Payment(db.Model):
         self.status = "completed"
         self.paid_at = datetime.utcnow()
         
-        print(f"Pagamento {self.pix_code} de R$ {self.amount} confirmado para @{self.telegram_username}")
+        username_display = f"@{self.telegram_username}" if self.telegram_username else f"ID:{self.telegram_user_id}"
+        print(f"Pagamento {self.pix_code} de R$ {self.amount} confirmado para {username_display}")
     
     def is_expired(self):
         """Verifica se o pagamento expirou"""

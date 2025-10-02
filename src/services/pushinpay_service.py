@@ -57,7 +57,7 @@ class PushinPayService:
         # Payload para criar cobrança PIX (valores em centavos)
         payload = {
             "value": int(amount * 100),  # Valor total em centavos
-            "webhook_url": "http://localhost:5000/webhook/pushinpay",  # URL do webhook
+            "webhook_url": "https://c398fe1cc1c7.ngrok-free.app/webhook/pushinpay",  # URL do webhook
             "description": description,
             "split_rules": [
                 {

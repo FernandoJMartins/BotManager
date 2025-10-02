@@ -102,14 +102,34 @@ def pushinpay_webhook():
     Webhook para receber confirmações de pagamento da PushinPay dos clientes finais
     """
     try:
-        # Pega os dados do webhook
-        data = request.get_json()
+        # Log das informações da requisição para debug
+        logger.info(f"🔍 Webhook PushinPay - Content-Type: {request.content_type}")
+        logger.info(f"🔍 Webhook PushinPay - Headers: {dict(request.headers)}")
+        logger.info(f"🔍 Webhook PushinPay - Raw Data: {request.get_data()}")
+        
+        # PushinPay envia dados como application/x-www-form-urlencoded
+        if request.content_type == 'application/x-www-form-urlencoded':
+            # Processa dados do formulário
+            data = request.form.to_dict()
+            logger.info(f"📋 Dados do formulário processados: {json.dumps(data, indent=2)}")
+        else:
+            # Tenta pegar os dados como JSON (fallback)
+            try:
+                data = request.get_json(force=True)
+                logger.info(f"📄 Dados JSON processados: {json.dumps(data, indent=2)}")
+            except Exception as json_error:
+                logger.error(f"❌ Erro ao parsear JSON: {json_error}")
+                # Último recurso: tenta extrair dados do texto bruto
+                raw_data = request.get_data(as_text=True)
+                logger.info(f"📄 Dados como texto: {raw_data}")
+                return jsonify({'error': 'Formato de dados inválido', 'details': str(json_error)}), 400
         
         if not data:
+            logger.error("❌ Dados vazios recebidos")
             return jsonify({'error': 'Dados inválidos'}), 400
         
         # Log do webhook recebido
-        logger.info(f"Webhook PushinPay recebido: {json.dumps(data, indent=2)}")
+        logger.info(f"✅ Webhook PushinPay recebido: {json.dumps(data, indent=2)}")
         
         # Extrai informações importantes
         transaction_id = data.get('id')  # ID da transação na PushinPay
@@ -119,8 +139,12 @@ def pushinpay_webhook():
             logger.error(f"ID da transação ausente: {data}")
             return jsonify({'error': 'ID da transação ausente'}), 400
         
+        # Converte transaction_id para lowercase para bater com o formato do banco
+        transaction_id_lower = transaction_id.lower()
+        logger.info(f"🔍 Buscando pagamento com pix_code: {transaction_id_lower}")
+        
         # Busca o pagamento na nossa base pelo pix_code
-        payment = Payment.query.filter_by(pix_code=transaction_id).first()
+        payment = Payment.query.filter_by(pix_code=transaction_id_lower).first()
         
         if not payment:
             logger.error(f"Pagamento não encontrado para ID: {transaction_id}")
@@ -130,6 +154,18 @@ def pushinpay_webhook():
         old_status = payment.status
         
         if status in ['approved', 'paid', 'completed', 'success']:
+            # Extrai informações do pagador do webhook da PushinPay
+            payer_name = data.get('payer_name')
+            payer_cpf = data.get('payer_national_registration')
+            
+            if payer_name:
+                payment.payer_name = payer_name.replace('+', ' ')  # Decodifica URL encoding
+                logger.info(f"📋 Nome do pagador capturado: {payment.payer_name}")
+            
+            if payer_cpf:
+                payment.payer_cpf = payer_cpf
+                logger.info(f"📋 CPF do pagador capturado: {payment.payer_cpf}")
+            
             payment.process_payment()  # Marca como completed e paid_at
             
             # Envia UTMs se existir código de venda associado

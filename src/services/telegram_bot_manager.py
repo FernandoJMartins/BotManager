@@ -511,15 +511,20 @@ class TelegramBotManager:
                 )
                 return
             
-            # Salva pagamento no banco
+            # Salva pagamento no banco com informações do usuário do Telegram
             payment = Payment(
                 pix_code=pix_data['pix_code'],
                 amount=value,
                 pix_key=pix_data.get('pix_copy_paste', ''),
                 pix_qr_code=pix_data.get('qr_code', ''),
                 expires_at=pix_data.get('expires_at'),
-                user_id=bot_config.user_id,
-                bot_id=bot_config.id
+                user_id=bot_config.user_id,  # Dono do bot
+                bot_id=bot_config.id,
+                # Informações do usuário do Telegram que está fazendo o pagamento
+                telegram_user_id=user.id,
+                telegram_username=user.username,
+                telegram_first_name=user.first_name,
+                telegram_last_name=user.last_name
             )
             
             db.session.add(payment)
@@ -767,8 +772,11 @@ class TelegramBotManager:
             query = update.callback_query
             user = update.effective_user
             
+            logger.info(f"🔍 Iniciando verificação de pagamento para @{user.username or user.id}")
+            
             # Extrai o ID do pagamento do callback data
             payment_id = int(query.data.split('_')[1])
+            logger.info(f"📋 ID do pagamento a verificar: {payment_id}")
             
             # Busca o pagamento no banco
             payment = Payment.query.get(payment_id)
@@ -843,17 +851,23 @@ class TelegramBotManager:
                             break
                 
                 # Envia notificação para o grupo de logs
-                await self._send_log_notification(
-                    context.bot,
-                    bot_config.get_log_group_id(),
-                    user,
-                    payment.amount,
-                    success_vip,
-                    payment,
-                    bot_config,
-                    plan_name,
-                    plan_duration
-                )
+                try:
+                    logger.info(f"📝 Tentando enviar notificação para grupo de logs...")
+                    await self._send_log_notification(
+                        context.bot,
+                        bot_config.get_log_group_id(),
+                        user,
+                        payment.amount,
+                        success_vip,
+                        payment,
+                        bot_config,
+                        plan_name,
+                        plan_duration
+                    )
+                    logger.info(f"✅ Notificação enviada com sucesso!")
+                except Exception as log_error:
+                    logger.error(f"❌ Erro ao enviar notificação de log: {log_error}")
+                    # Continua mesmo se falhar o log
                 
                 # Resposta ao usuário
                 if success_vip:
@@ -945,39 +959,41 @@ Entre em contato com o suporte."""
                 logger.warning("⚠️  ID do grupo de logs não configurado")
                 return
             
-            # Busca informações extras do usuário
-            user_info = await self._get_enhanced_user_info(bot, user)
+            # Busca informações extras do usuário do Telegram
+            user_info = await self._get_enhanced_user_info(user, payment, bot_config)
             
-            # Calcula valor líquido (assumindo 10% de taxa)
-            net_value = amount * 0.9
+            # Calcula valor líquido (deduz R$1.00 conforme especificação)
+            net_value = amount - 1.00
             
-            # Calcula tempo de conversão (placeholder por enquanto)
-            conversion_time = "0d 0h 2m 37s"  # TODO: Implementar cálculo real
+            # Busca informações do código de venda para tempo de conversão e código
+            codigo_venda_info = self._get_codigo_venda_info(payment)
+            conversion_time = codigo_venda_info.get('conversion_time', '0d 0h 2m 37s')
+            sale_code = codigo_venda_info.get('sale_code', 'CodigoGeradoNoStartViaUrL')
             
             # Determina categoria do plano
             plan_category = self._get_plan_category(plan_name)
             
-            # Código de venda (placeholder por enquanto) 
-            sale_code = "direct_access"  # TODO: Capturar do parâmetro start
+            # Monta a notificação com informações corretas do usuário do Telegram
+            # user = usuário do Telegram que usou o bot (NÃO é o dono do bot)
+            telegram_full_name = f"{user.first_name} {user.last_name or ''}".strip()
             
-            # Monta a notificação melhorada
             log_message = f"""🎉 Pagamento Aprovado!
 🤖 Bot: @{bot_config.bot_username if bot_config else 'bot_desconhecido'}
 ⚙️ ID Bot: {bot_config.id if bot_config else 'N/A'}
 🆔 ID Cliente: {user.id}
 🔗 Username: @{user.username or 'sem_username'}
-👤 Nome de Perfil: {user.first_name} {user.last_name or ''}
-👤 Nome Completo: {user_info.get('full_name', 'N/A')}
+👤 Nome de Perfil: {telegram_full_name}
+👤 Nome Completo: {user_info.get('full_name', telegram_full_name)}
 💳 CPF: {user_info.get('cpf_masked', 'N/A')}
 📦 Categoria: {plan_category}
 🎁 Plano: {plan_name} 💎
 📅 Duração: {plan_duration.title() if plan_duration else 'N/A'}
 💰 Valor: R${amount:.2f}
-� Valor Líquido: R${net_value:.2f}
+💵 Valor Líquido: R${net_value:.2f}
 ⏳ Tempo Conversão: {conversion_time}
 🔖 Código de Venda: {sale_code}
 🔑 ID Transação: {payment.pix_code if payment else 'N/A'}
-🏷️ ID Gateway: {user_info.get('gateway_id', 'N/A')}
+🏷️ ID Gateway: {user_info.get('gateway_id', payment.pix_code if payment else 'N/A')}
 💱 Moeda: BRL
 💳 Método: PIX
 🏦 Plataforma: PushinPay"""
@@ -1007,31 +1023,137 @@ Entre em contato com o suporte."""
         else:
             return "Plano Normal"
     
-    async def _get_enhanced_user_info(self, bot, user) -> dict:
-        """Busca informações aprimoradas do usuário"""
-        try:
-            # Informações básicas do Telegram
-            chat_member = await bot.get_chat_member(user.id, user.id)
-            telegram_user = chat_member.user
+    async def _get_enhanced_user_info(self, telegram_user, payment=None, bot_config=None) -> dict:
+        """Busca informações aprimoradas do usuário do Telegram"""
+        try:            
+            # Monta nome completo do usuário do Telegram
+            telegram_full_name = f"{telegram_user.first_name} {telegram_user.last_name or ''}".strip()
             
-            # TODO: Integrar com dados do PushinPay para obter CPF e nome completo
+            # Se temos um pagamento, verifica se já temos dados do pagador real
+            if payment:
+                # Dados reais do pagador (vindos da PushinPay via webhook)
+                try:
+                    real_name = getattr(payment, 'payer_name', None) or telegram_full_name
+                    real_cpf = self._mask_cpf(getattr(payment, 'payer_cpf', None)) if getattr(payment, 'payer_cpf', None) else 'N/A'
+                except Exception as attr_error:
+                    logger.error(f"Erro ao acessar atributos do payment: {attr_error}")
+                    real_name = telegram_full_name
+                    real_cpf = 'N/A'
+            else:
+                real_name = telegram_full_name
+                real_cpf = 'N/A'
+            
             return {
-                'full_name': f"{telegram_user.first_name} {telegram_user.last_name or ''}".strip(),
-                'cpf_masked': 'N/A',  # TODO: Obter do PushinPay
-                'gateway_id': 'N/A',  # TODO: Obter do PushinPay
+                'full_name': real_name,
+                'cpf_masked': real_cpf,
+                'gateway_id': payment.pix_code if payment else 'N/A',
                 'is_premium': getattr(telegram_user, 'is_premium', False),
                 'language_code': getattr(telegram_user, 'language_code', 'pt-br')
             }
         except Exception as e:
-            logger.error(f"Erro ao buscar info aprimorada do usuário {user.id}: {e}")
+            logger.error(f"Erro ao buscar info aprimorada do usuário {telegram_user.id}: {e}")
             return {
-                'full_name': f"{user.first_name} {user.last_name or ''}".strip(),
+                'full_name': f"{telegram_user.first_name} {telegram_user.last_name or ''}".strip(),
                 'cpf_masked': 'N/A',
                 'gateway_id': 'N/A',
                 'is_premium': False,
                 'language_code': 'pt-br'
             }
+
+    async def _get_pushinpay_user_data(self, payment, bot_config) -> dict:
+        """Busca dados do usuário na API da PushinPay"""
+        try:
+            # Busca o dono do bot para pegar o token PushinPay
+            from ..models.client import User
+            bot_owner = User.query.get(bot_config.user_id)
             
+            if not bot_owner or not bot_owner.pushinpay_token:
+                return {}
+            
+            # Tenta buscar informações da transação na PushinPay
+            pushin_service = PushinPayService()
+            payment_details = pushin_service.check_payment_status(
+                bot_owner.pushinpay_token,
+                payment.pix_code
+            )
+            
+            if payment_details.get('success') and payment_details.get('data'):
+                data = payment_details['data']
+                
+                # Extrai informações do pagador se disponíveis
+                payer_info = data.get('payer', {})
+                
+                return {
+                    'full_name': payer_info.get('name', ''),
+                    'cpf_masked': self._mask_cpf(payer_info.get('cpf', '')),
+                    'gateway_id': data.get('gateway_id', payment.pix_code)
+                }
+            
+            return {}
+            
+        except Exception as e:
+            logger.error(f"Erro ao buscar dados PushinPay: {e}")
+            return {}
+
+    def _mask_cpf(self, cpf: str) -> str:
+        """Mascara CPF para exibição nos logs"""
+        if not cpf or len(cpf) < 11:
+            return 'N/A'
+        
+        # Remove caracteres não numéricos
+        cpf_numbers = ''.join(filter(str.isdigit, cpf))
+        
+        if len(cpf_numbers) != 11:
+            return 'N/A'
+        
+        # Formato: 123.***.**1-45
+        return f"{cpf_numbers[:3]}.***.**{cpf_numbers[-3:]}"
+
+    def _get_codigo_venda_info(self, payment) -> dict:
+        """Busca informações do código de venda associado ao pagamento"""
+        try:
+            if not payment:
+                return {
+                    'conversion_time': '0d 0h 0m 0s',
+                    'sale_code': 'CodigoGeradoNoStartViaUrL'
+                }
+            
+            # Busca código de venda associado ao pagamento
+            from ..models.codigo_venda import CodigoVenda
+            codigo_venda = CodigoVenda.query.filter_by(payment_id=payment.id).first()
+            
+            if codigo_venda:
+                # Calcula tempo de conversão
+                if codigo_venda.created_at and payment.paid_at:
+                    time_diff = payment.paid_at - codigo_venda.created_at
+                    days = time_diff.days
+                    hours, remainder = divmod(time_diff.seconds, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    conversion_time = f"{days}d {hours}h {minutes}m {seconds}s"
+                else:
+                    conversion_time = "0d 0h 0m 0s"
+                
+                # Código de venda baseado nos parâmetros UTM
+                utm_campaign = codigo_venda.utm_campaign or 'direct'
+                utm_source = codigo_venda.utm_source or 'telegram'
+                sale_code = f"{utm_campaign}_{utm_source}_{codigo_venda.id}"
+                
+                return {
+                    'conversion_time': conversion_time,
+                    'sale_code': sale_code
+                }
+            
+            return {
+                'conversion_time': '0d 0h 0m 0s',
+                'sale_code': 'CodigoGeradoNoStartViaUrL'
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao buscar código de venda: {e}")
+            return {
+                'conversion_time': '0d 0h 0m 0s',
+                'sale_code': 'CodigoGeradoNoStartViaUrL'
+            }
     
     async def _get_user_info(self, bot, user_id: int) -> dict:
         """Busca informações do usuário no Telegram"""
