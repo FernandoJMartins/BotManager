@@ -275,7 +275,7 @@ class PushinPayService:
         
         try:
             response = requests.get(
-                f"{self.api_base_url}/pix/transactions/{payment_id}",
+                f"{self.api_base_url}/transactions/{payment_id}",
                 headers=headers,
                 timeout=30
             )

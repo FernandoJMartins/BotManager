@@ -793,24 +793,25 @@ class TelegramBotManager:
             # Busca o dono do bot
             bot_owner = User.query.get(bot_config.user_id)
             if not bot_owner or not bot_owner.pushinpay_token:
-                await query.edit_message_text("❌ Sistema de pagamento indisponível.")
+                await query.edit_message_text("❌ Sistema de pagamento indisponível. Tente novamente mais tarde")
                 return
             
-            # Verifica o status do pagamento
-            logger.info(f"🔍 Verificando pagamento {payment_id} para @{user.username or user.id}")
+       
             
             # Verifica com a API do PushinPay
             try:
                 pushin_service = PushinPayService()
+
+                transaction_id = payment.pix_code
                 
                 # Usa o pix_code como payment_id para verificar o status
                 payment_status = pushin_service.check_payment_status(
                     bot_owner.pushinpay_token, 
-                    payment.pix_code
+                    transaction_id
                 )
                 payment_verified = payment_status.get('paid', False)
                 
-                logger.info(f"📊 Status do pagamento {payment.pix_code}: {payment_status}")
+                logger.info(f"📊 Status do pagamento {transaction_id}: {payment_status}")
                 
             except Exception as api_error:
                 logger.error(f"❌ Erro ao verificar pagamento via API: {api_error}")
@@ -819,7 +820,7 @@ class TelegramBotManager:
             
             if payment_verified:
                 # Pagamento aprovado! 
-                payment.status = 'approved'
+                payment.status = 'approved' or 'completed'
                 payment.paid_at = datetime.utcnow()
                 db.session.commit()
                 
@@ -871,10 +872,9 @@ class TelegramBotManager:
                 
                 # Resposta ao usuário
                 if success_vip:
-                    success_message = f"""✅ **PAGAMENTO APROVADO!**
+                    success_message = f"""✅ PAGAMENTO APROVADO!
 
 🎉 Parabéns! Seu pagamento foi confirmado.
-💰 Valor: R$ {payment.amount:.2f}
 👑 Você foi adicionado ao grupo VIP!
 
 Aproveite o acesso exclusivo! 🚀"""
@@ -882,7 +882,6 @@ Aproveite o acesso exclusivo! 🚀"""
                     success_message = f"""✅ **PAGAMENTO APROVADO!**
 
 🎉 Parabéns! Seu pagamento foi confirmado.
-💰 Valor: R$ {payment.amount:.2f}
 
 ⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
 Entre em contato com o suporte."""
@@ -891,13 +890,9 @@ Entre em contato com o suporte."""
                 await query.answer("Pagamento aprovado!")
                 
                 # Envia nova mensagem de sucesso
-                keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
                 await context.bot.send_message(
                     chat_id=user.id,
                     text=success_message,
-                    reply_markup=reply_markup
                 )
                 
             else:
@@ -906,7 +901,6 @@ Entre em contato com o suporte."""
                 
                 keyboard = [
                     [InlineKeyboardButton("🔄 Verificar Novamente", callback_data=f"check_{payment_id}")],
-                    [InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
