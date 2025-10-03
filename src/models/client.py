@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     pushinpay_token = db.Column(db.String(255), nullable=True)  # Token Bearer da PushinPay
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    fee = db.Column(db.Float, default=0.7)
     
     # Relationship com bots
     bots = db.relationship('TelegramBot', backref='owner', lazy=True, cascade='all, delete-orphan')
