@@ -116,16 +116,11 @@
         <div class="sidebar-footer">
           <div class="user-profile">
             <div class="user-avatar">
-              <img
-                src="https://via.placeholder.com/40x40/6366f1/ffffff?text={{ session.user_name[0] if session.user_name else 'U' }}"
-                alt="User"
-              />
+              <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
-              <span class="user-name"
-                >{{ session.user_name or 'Usuário' }}</span
-              >
-              <span class="user-role">Admin principal</span>
+              <span class="user-name"> {{ current_user.username }}</span>
+              <span class="user-role">Usuário Logado</span>
             </div>
           </div>
         </div>
