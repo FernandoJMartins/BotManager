@@ -1,137 +1,128 @@
-{% extends "base_dark.html" %} {% block title %}Meus Bots - BotManager
-{%endblock %} {% block content %}
+{% extends "base_dark.html" %} {% block title %}Meus Bots - BotManager{%
+endblock %} {% block content %}
+<div class="bot-list-page">
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1>Meus Bots</h1>
+      <p>Gerencie e monitore seus bots do Telegram</p>
+    </div>
+    <div class="header-right">
+      {% if can_add_more %}
+      <a href="{{ url_for('bots.create_bot') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>Novo Bot
+      </a>
+      {% else %}
+      <div
+        class="alert"
+        style="
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+        "
+      >
+        <i class="fas fa-exclamation-triangle"></i>
+        Limite atingido
+      </div>
+      {% endif %}
+    </div>
+  </header>
 
-<!-- Header da página -->
-<div class="bots-header">
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-      <div class="d-flex gap-2">
-        {% if can_add_more %}
-        <a href="{{ url_for('bots.create_bot') }}" class="btn btn-light btn-lg">
-          <i class="fas fa-plus me-2"></i>Novo Bot
-        </a>
+  {% if bots %}
+  <!-- Grid de Bots -->
+  <div class="stats-grid">
+    {% for bot in bots %}
+    <div
+      class="stat-card bot-card {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
+      data-bot-id="{{ bot.id }}"
+    >
+      <div class="stat-header">
+        <div class="stat-title">
+          <i class="fas fa-robot"></i>
+          {{ bot.username or bot.name or 'bot_' + bot.id|string }}
+        </div>
+
+        {% if bot.is_active %} {% if bot.is_running %}
+        <span class="status-badge running">
+          <i class="fas fa-play"></i>RODANDO
+        </span>
         {% else %}
-        <span class="badge bg-warning fs-6 px-3 py-2">
-          <i class="fas fa-exclamation-triangle me-1"></i>
-          Limite atingido
+        <span class="status-badge active">
+          <i class="fas fa-check"></i>ATIVO
+        </span>
+        {% endif %} {% else %}
+        <span class="status-badge pending">
+          <i class="fas fa-clock"></i>PENDENTE
         </span>
         {% endif %}
       </div>
-    </div>
-  </div>
-</div>
 
-<div class="container">
-  {% if bots %}
-  <!-- Estatísticas Overview -->
-  <div class="stats-overview"></div>
-
-  <!-- Grid de Bots -->
-  <div class="row">
-    {% for bot in bots %}
-    <div class="stats-grid">
-      <div
-        class="stat-card {{ 'running' if bot.is_running else ('inactive' if not bot.is_active else '') }}"
-        data-bot-id="{{ bot.id }}"
-      >
-        <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <i class="fas fa-robot fa-lg me-2"></i>
-              <h6 class="mb-0 fw-bold">{{ bot.username }}</h6>
-            </div>
-            <span
-              class="status-badge {{ 'active' if bot.is_active else 'pending' }}"
-            >
-              {% if bot.is_active %} {% if bot.is_running %}
-              <i class="fas fa-play me-1"></i>Rodando {% else %}
-              <i class="fas fa-check me-1"></i>Ativo {% endif %} {% else %}
-              <i class="fas fa-clock me-1"></i>Pendente {% endif %}
-            </span>
-          </div>
+      <div class="bot-details">
+        <div class="bot-info-item">
+          <i class="fas fa-calendar"></i>
+          <span
+            >{{ bot.created_at[:10] if bot.created_at else '2025-10-01' }}</span
+          >
         </div>
-
-        <div class="card-body p-3">
-          <!-- Informações do Bot -->
-          <div class="bot-info mb-3">
-            <div class="bot-info-item">
-              <i class="fas fa-at text-primary me-2"></i>
-              <span class="text-muted">{{ bot.name }}</span>
-            </div>
-            <div class="bot-info-item">
-              <i class="fas fa-calendar text-info me-2"></i>
-              <span class="text-muted">
-                {{ bot.created_at[:10] if bot.created_at else 'N/A' }}
-              </span>
-            </div>
-            <div class="bot-info-item">
-              <i
-                class="fas fa-circle text-{{ 'success' if bot.is_running else 'secondary' }} me-2"
-              ></i>
-              <span class="text-{{ 'success' if bot.is_running else 'muted' }}">
-                {{ 'Online' if bot.is_running else 'Offline' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Ações -->
-          <div class="action-buttons">
-            {% if bot.is_active %}
-            <div class="d-grid gap-2">
-              <div class="btn-group" role="group">
-                <a
-                  href="{{ url_for('bots.edit_bot', slug=bot.id) }}"
-                  class="btn btn-outline-primary btn-sm"
-                  data-bs-toggle="tooltip"
-                  title="Editar Bot"
-                >
-                  <i class="fas fa-edit"></i>
-                </a>
-                <button
-                  class="btn btn-outline-danger btn-sm"
-                  data-bs-toggle="tooltip"
-                  title="Excluir Bot"
-                  data-action="delete"
-                  data-bot-id="{{ bot.id }}"
-                  data-bot-name="{{ bot.name }}"
-                >
-                  <i class="fas fa-trash"></i>
-                </button>
-                {% if not bot.is_running %}
-                <button
-                  class="btn btn-outline-success btn-sm"
-                  data-bs-toggle="tooltip"
-                  title="Iniciar Bot"
-                  data-action="start"
-                  data-bot-id="{{ bot.id }}"
-                >
-                  <i class="fas fa-play"></i>
-                </button>
-                {% else %}
-                <button
-                  class="btn btn-outline-warning btn-sm"
-                  data-bs-toggle="tooltip"
-                  title="Parar Bot"
-                  data-action="stop"
-                  data-bot-id="{{ bot.id }}"
-                >
-                  <i class="fas fa-stop"></i>
-                </button>
-                {% endif %}
-              </div>
-            </div>
-            {% else %}
-            <div class="d-grid">
-              <button
-                class="btn btn-warning"
-                onclick="alert('Bot inativo. Configure o bot primeiro.')"
-              >
-                <i class="fas fa-exclamation-triangle me-2"></i>Bot Inativo
-              </button>
-            </div>
-            {% endif %}
-          </div>
+        <div class="bot-info-item">
+          <i
+            class="fas fa-circle {{ 'online' if bot.is_running else 'offline' }}"
+          ></i>
+          <span>{{ 'Online' if bot.is_running else 'Offline' }}</span>
         </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="bot-actions">
+        {% if bot.is_active %}
+        <div class="action-buttons">
+          <a
+            href="{{ url_for('bots.edit_bot', slug=bot.id) }}"
+            class="btn-secondary btn-small"
+            title="Editar Bot"
+          >
+            <i class="fas fa-edit"></i>
+          </a>
+          <button
+            class="btn-secondary btn-small btn-danger"
+            title="Excluir Bot"
+            data-action="delete"
+            data-bot-id="{{ bot.id }}"
+            data-bot-name="{{ bot.name }}"
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+          {% if not bot.is_running %}
+          <button
+            class="btn-secondary btn-small btn-success"
+            title="Iniciar Bot"
+            data-action="start"
+            data-bot-id="{{ bot.id }}"
+          >
+            <i class="fas fa-play"></i>
+          </button>
+          {% else %}
+          <button
+            class="btn-secondary btn-small btn-warning"
+            title="Parar Bot"
+            data-action="stop"
+            data-bot-id="{{ bot.id }}"
+          >
+            <i class="fas fa-stop"></i>
+          </button>
+          {% endif %}
+        </div>
+        {% else %}
+        <button
+          class="btn-secondary inactive-btn"
+          onclick="alert('Bot inativo. Configure o bot primeiro.')"
+        >
+          <i class="fas fa-exclamation-triangle"></i>Bot Inativo
+        </button>
+        {% endif %}
       </div>
     </div>
     {% endfor %}
@@ -139,44 +130,41 @@
 
   {% else %}
   <!-- Estado Vazio -->
-  <div class="card">
-    <div class="card-body">
-      <div class="empty-state animate-fade-in-up">
-        <i class="fas fa-robot fa-5x mb-4"></i>
-        <h3 class="text-muted mb-3">Nenhum bot cadastrado</h3>
-        <p class="text-muted mb-4 lead">
-          Comece criando seu primeiro bot do Telegram e transforme suas ideias
-          em realidade!
-        </p>
-        {% if can_add_more %}
-        <a
-          href="{{ url_for('bots.create_bot') }}"
-          class="btn btn-primary btn-lg"
-        >
-          <i class="fas fa-plus me-2"></i>Criar Primeiro Bot
-        </a>
-        {% else %}
-        <div class="alert alert-warning d-inline-block">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          Limite máximo de bots atingido
-        </div>
-        {% endif %}
+  <div class="chart-card">
+    <div class="empty-state">
+      <i class="fas fa-robot"></i>
+      <h3>Nenhum bot cadastrado</h3>
+      <p>
+        Comece criando seu primeiro bot do Telegram e transforme suas ideias em
+        realidade!
+      </p>
+      {% if can_add_more %}
+      <a href="{{ url_for('bots.create_bot') }}" class="btn-primary">
+        <i class="fas fa-plus"></i>Criar Primeiro Bot
+      </a>
+      {% else %}
+      <div
+        class="alert"
+        style="
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          padding: 12px 20px;
+          border-radius: 8px;
+        "
+      >
+        <i class="fas fa-exclamation-triangle"></i>
+        Limite máximo de bots atingido
       </div>
+      {% endif %}
     </div>
   </div>
   {% endif %}
 </div>
+<!-- Fecha bot-list-page -->
 {% endblock %} {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Inicializar tooltips
-    const tooltipTriggerList = [].slice.call(
-      document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    );
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
     // Event delegation para ações dos bots
     document.addEventListener("click", handleBotActions);
   });
@@ -302,7 +290,7 @@
 
   function setButtonLoading(button, text) {
     button.disabled = true;
-    button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
+    button.innerHTML = `<i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i>${text}`;
   }
 
   function resetButton(button, originalHtml) {
@@ -315,13 +303,28 @@
     const existingAlerts = document.querySelectorAll(".notification");
     existingAlerts.forEach((alert) => alert.remove());
 
-    const alertClass =
-      {
-        success: "alert-success",
-        error: "alert-danger",
-        warning: "alert-warning",
-        info: "alert-info",
-      }[type] || "alert-info";
+    const alertStyles = {
+      success: {
+        bg: "var(--success-bg)",
+        color: "var(--success)",
+        border: "var(--success)",
+      },
+      error: {
+        bg: "var(--danger-bg)",
+        color: "var(--danger)",
+        border: "var(--danger)",
+      },
+      warning: {
+        bg: "rgba(245, 158, 11, 0.1)",
+        color: "#f59e0b",
+        border: "#f59e0b",
+      },
+      info: {
+        bg: "rgba(139, 92, 246, 0.1)",
+        color: "var(--purple)",
+        border: "var(--purple)",
+      },
+    };
 
     const alertIcon =
       {
@@ -331,13 +334,42 @@
         info: "fas fa-info-circle",
       }[type] || "fas fa-info-circle";
 
+    const style = alertStyles[type] || alertStyles.info;
+
     const alertHtml = `
-    <div class="alert ${alertClass} alert-dismissible fade show notification animate-fade-in-up" role="alert">
-      <i class="${alertIcon} me-2"></i>
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  `;
+      <div class="notification" style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: ${style.bg};
+        color: ${style.color};
+        border: 1px solid ${style.border};
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideInFromRight 0.3s ease-out;
+        max-width: 400px;
+      ">
+        <i class="${alertIcon}"></i>
+        ${message}
+        <button onclick="this.parentElement.remove()" style="
+          background: none;
+          border: none;
+          color: ${style.color};
+          cursor: pointer;
+          margin-left: 8px;
+          font-size: 16px;
+          padding: 0;
+          opacity: 0.7;
+        ">×</button>
+      </div>
+    `;
 
     document.body.insertAdjacentHTML("beforeend", alertHtml);
 
@@ -345,8 +377,8 @@
     setTimeout(() => {
       const alert = document.querySelector(".notification");
       if (alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
+        alert.style.animation = "slideOutToRight 0.3s ease-in";
+        setTimeout(() => alert.remove(), 300);
       }
     }, 5000);
   }

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meus Bots - BotManager</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="src/static/css/dashboard-dark.css" />
+    <style>
+      /* Reset de focus - sem bordas azuis */
+      *:focus,
+      *:focus-visible,
+      *:focus-within,
+      .form-control:focus,
+      .form-select:focus,
+      .btn:focus,
+      input:focus,
+      textarea:focus,
+      select:focus,
+      button:focus,
+      a:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: #dee2e6 !important;
+      }
+      * {
+        outline: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-robot"></i>
+            <span>BotManager X</span>
+          </div>
+        </div>
+
+        <div class="sidebar-search">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar..." id="sidebarSearch" />
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <ul>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item active">
+              <a href="#" class="nav-link">
+                <i class="fas fa-robot"></i>
+                <span>Todos os bots</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-plus-circle"></i>
+                <span>Criar bot</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Clientes</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-dollar-sign"></i>
+                <span>Pagamentos</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+                <i class="fas fa-chevron-right arrow"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-profile">
+            <div class="user-avatar">
+              <img
+                src="https://via.placeholder.com/40x40/6366f1/ffffff?text=U"
+                alt="User"
+              />
+            </div>
+            <div class="user-info">
+              <span class="user-name">Usuário</span>
+              <span class="user-role">Admin principal</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+          <div class="header-left">
+            <h1>Meus Bots</h1>
+            <p>Gerencie e monitore seus bots do Telegram</p>
+          </div>
+          <div class="header-right">
+            <a href="#" class="btn-primary">
+              <i class="fas fa-plus"></i>Novo Bot
+            </a>
+          </div>
+        </header>
+
+        <!-- Grid de Bots -->
+        <div class="stats-grid">
+          <!-- Bot 1 - Rodando -->
+          <div class="stat-card bot-card running" data-bot-id="1">
+            <div class="stat-header">
+              <div class="stat-title">
+                <i class="fas fa-robot"></i>
+                @TestBot_001
+              </div>
+              <div class="status-indicator">
+                <span class="status-badge running">
+                  <i class="fas fa-play"></i>Rodando
+                </span>
+              </div>
+            </div>
+
+            <div class="bot-details">
+              <div class="bot-info-item">
+                <i class="fas fa-at"></i>
+                <span>Test Bot Principal</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-calendar"></i>
+                <span>2024-10-01</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-circle online"></i>
+                <span>Online</span>
+              </div>
+            </div>
+
+            <div class="bot-actions">
+              <div class="action-buttons">
+                <a href="#" class="btn-secondary btn-small" title="Editar Bot">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button
+                  class="btn-secondary btn-small btn-danger"
+                  title="Excluir Bot"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+                <button
+                  class="btn-secondary btn-small btn-warning"
+                  title="Parar Bot"
+                >
+                  <i class="fas fa-stop"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot 2 - Ativo mas parado -->
+          <div class="stat-card bot-card" data-bot-id="2">
+            <div class="stat-header">
+              <div class="stat-title">
+                <i class="fas fa-robot"></i>
+                @SalesBot_v2
+              </div>
+              <div class="status-indicator">
+                <span class="status-badge active">
+                  <i class="fas fa-check"></i>Ativo
+                </span>
+              </div>
+            </div>
+
+            <div class="bot-details">
+              <div class="bot-info-item">
+                <i class="fas fa-at"></i>
+                <span>Bot de Vendas</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-calendar"></i>
+                <span>2024-09-28</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-circle offline"></i>
+                <span>Offline</span>
+              </div>
+            </div>
+
+            <div class="bot-actions">
+              <div class="action-buttons">
+                <a href="#" class="btn-secondary btn-small" title="Editar Bot">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button
+                  class="btn-secondary btn-small btn-danger"
+                  title="Excluir Bot"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+                <button
+                  class="btn-secondary btn-small btn-success"
+                  title="Iniciar Bot"
+                >
+                  <i class="fas fa-play"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot 3 - Pendente/Inativo -->
+          <div class="stat-card bot-card inactive" data-bot-id="3">
+            <div class="stat-header">
+              <div class="stat-title">
+                <i class="fas fa-robot"></i>
+                @SupportBot
+              </div>
+              <div class="status-indicator">
+                <span class="status-badge pending">
+                  <i class="fas fa-clock"></i>Pendente
+                </span>
+              </div>
+            </div>
+
+            <div class="bot-details">
+              <div class="bot-info-item">
+                <i class="fas fa-at"></i>
+                <span>Bot de Suporte</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-calendar"></i>
+                <span>2024-10-03</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-circle offline"></i>
+                <span>Offline</span>
+              </div>
+            </div>
+
+            <div class="bot-actions">
+              <button class="btn-secondary inactive-btn">
+                <i class="fas fa-exclamation-triangle"></i>Bot Inativo
+              </button>
+            </div>
+          </div>
+
+          <!-- Bot 4 - Mais um exemplo rodando -->
+          <div class="stat-card bot-card running" data-bot-id="4">
+            <div class="stat-header">
+              <div class="stat-title">
+                <i class="fas fa-robot"></i>
+                @NewsBot_Daily
+              </div>
+              <div class="status-indicator">
+                <span class="status-badge running">
+                  <i class="fas fa-play"></i>Rodando
+                </span>
+              </div>
+            </div>
+
+            <div class="bot-details">
+              <div class="bot-info-item">
+                <i class="fas fa-at"></i>
+                <span>Bot de Notícias</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-calendar"></i>
+                <span>2024-09-15</span>
+              </div>
+              <div class="bot-info-item">
+                <i class="fas fa-circle online"></i>
+                <span>Online</span>
+              </div>
+            </div>
+
+            <div class="bot-actions">
+              <div class="action-buttons">
+                <a href="#" class="btn-secondary btn-small" title="Editar Bot">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button
+                  class="btn-secondary btn-small btn-danger"
+                  title="Excluir Bot"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+                <button
+                  class="btn-secondary btn-small btn-warning"
+                  title="Parar Bot"
+                >
+                  <i class="fas fa-stop"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Simulação do JavaScript básico
+      document.addEventListener("click", function (event) {
+        if (event.target.closest(".btn-danger")) {
+          const confirmed = confirm("Tem certeza que deseja excluir este bot?");
+          if (confirmed) {
+            alert("Bot excluído com sucesso!");
+          }
+        }
+
+        if (event.target.closest(".btn-success")) {
+          alert("Bot iniciado com sucesso! 🚀");
+        }
+
+        if (event.target.closest(".btn-warning")) {
+          alert("Bot parado com sucesso!");
+        }
+
+        if (event.target.closest(".inactive-btn")) {
+          alert("Bot inativo. Configure o bot primeiro.");
+        }
+      });
+    </script>
+  </body>
+</html>
