@@ -1,0 +1,401 @@
+{% extends "base_dark.html" %} 
+{% block title %}Configuração de Pagamentos - Telegram Bot Manager{% endblock %} 
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="header-content">
+        <div>
+            <h1><i class="fas fa-credit-card"></i> Configuração de Pagamentos</h1>
+            <p>Configure sua integração com PushinPay para receber pagamentos automáticos</p>
+        </div>
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Voltar ao Perfil
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Configuração do Token -->
+    <div class="dashboard-card large">
+        <div class="card-header">
+            <h3><i class="fas fa-key"></i> Token PushinPay</h3>
+        </div>
+        <div class="card-content">
+            {% if current_user.pushinpay_token %}
+            <div class="alert alert-success">
+                <div class="alert-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <strong>Token configurado com sucesso!</strong>
+                    <p>Seus bots já podem receber pagamentos automaticamente</p>
+                </div>
+            </div>
+            
+            <div class="token-display">
+                <div class="token-header">
+                    <h4>Token Atual</h4>
+                    <button class="btn btn-outline" onclick="toggleTokenForm()">
+                        <i class="fas fa-edit"></i>
+                        Alterar
+                    </button>
+                </div>
+                <div class="token-value">
+                    <code>{{ current_user.pushinpay_token[:20] }}...</code>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <strong>Token não configurado</strong>
+                    <p>Configure seu token para começar a receber pagamentos</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulário de configuração -->
+            <div id="tokenForm" {% if current_user.pushinpay_token %}style="display:none;"{% endif %}>
+                <form method="POST" action="{{ url_for('auth.save_pushinpay_token') }}">
+                    <div class="form-group">
+                        <label for="token">
+                            <i class="fas fa-key"></i>
+                            Token Bearer PushinPay
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="token"
+                            name="token"
+                            placeholder="Bearer 11111|XXXXXXXXXXXXXXXXXXXXX"
+                            required
+                        />
+                        <small class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Obtenha este token no painel administrativo da PushinPay
+                        </small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Token
+                        </button>
+                        
+                        {% if current_user.pushinpay_token %}
+                        <button type="button" class="btn btn-secondary" onclick="toggleTokenForm()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-question-circle"></i> Como Obter o Token</h3>
+        </div>
+        <div class="card-content">
+            <div class="tutorial-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Acesse a PushinPay</h4>
+                        <p>Faça login em sua conta PushinPay</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Vá em API/Tokens</h4>
+                        <p>Navegue até a seção de tokens de API</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Copie o Token</h4>
+                        <p>Copie o token Bearer completo</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="security-note">
+                <i class="fas fa-shield-alt"></i>
+                <small>Seu token é criptografado e armazenado com segurança</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Benefícios -->
+<div class="dashboard-card mt-4">
+    <div class="card-header">
+        <h3><i class="fas fa-star"></i> Vantagens da Integração PushinPay</h3>
+    </div>
+    <div class="card-content">
+        <div class="benefits-grid">
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Pagamento Direto</h4>
+                    <p>100% dos valores vão direto para sua conta PushinPay</p>
+                </div>
+            </div>
+            
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Automático</h4>
+                    <p>PIX gerado e verificação automática 24/7</p>
+                </div>
+            </div>
+            
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Taxa Baixa</h4>
+                    <p>Apenas R$ 0,70 por transação aprovada</p>
+                </div>
+            </div>
+            
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Grupos VIP</h4>
+                    <p>Adição automática aos grupos após pagamento</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleTokenForm() {
+    const form = document.getElementById("tokenForm");
+    const isHidden = form.style.display === "none";
+    
+    if (isHidden) {
+        form.style.display = "block";
+        form.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        form.style.display = "none";
+    }
+}
+</script>
+{% endblock %}
+            class="step-item mb-3 pb-3"
+            style="border-bottom: 1px solid #e5e7eb"
+          >
+            <div class="d-flex align-items-start">
+              <div class="step-number me-3 mt-1">
+                <span
+                  class="badge bg-primary"
+                  style="
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                  >1</span
+                >
+              </div>
+              <div>
+                <h6 class="mb-1 fw-semibold" style="color: #1f2937">
+                  Acesse a PushinPay
+                </h6>
+                <p class="mb-0" style="color: #6b7280; font-size: 0.9rem">
+                  Faça login em sua conta PushinPay
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="step-item mb-3 pb-3"
+            style="border-bottom: 1px solid #e5e7eb"
+          >
+            <div class="d-flex align-items-start">
+              <div class="step-number me-3 mt-1">
+                <span
+                  class="badge bg-primary"
+                  style="
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                  >2</span
+                >
+              </div>
+              <div>
+                <h6 class="mb-1 fw-semibold" style="color: #1f2937">
+                  Vá em API/Tokens
+                </h6>
+                <p class="mb-0" style="color: #6b7280; font-size: 0.9rem">
+                  Navegue até a seção de tokens de API
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="d-flex align-items-start">
+              <div class="step-number me-3 mt-1">
+                <span
+                  class="badge bg-primary"
+                  style="
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                  >3</span
+                >
+              </div>
+              <div>
+                <h6 class="mb-1 fw-semibold" style="color: #1f2937">
+                  Copie o Token
+                </h6>
+                <p class="mb-0" style="color: #6b7280; font-size: 0.9rem">
+                  Copie o token Bearer completo
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="mt-4 p-3"
+          style="
+            background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);
+            border-radius: 12px;
+          "
+        >
+          <div class="d-flex align-items-center text-center">
+            <i class="fas fa-shield-alt me-2" style="color: #7c3aed"></i>
+            <small style="color: #5b21b6; font-weight: 500">
+              Seu token é criptografado e armazenado com segurança
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Benefícios -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card shadow border-0" style="border-radius: 16px">
+      <div
+        class="card-header text-white"
+        style="
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+          border-radius: 16px 16px 0 0;
+          padding: 1.5rem;
+        "
+      >
+        <h5 class="mb-0 fw-bold">
+          <i class="fas fa-star me-2"></i>
+          Vantagens da Integração PushinPay
+        </h5>
+      </div>
+      <div class="card-body" style="padding: 2rem">
+        <div class="row">
+          <div class="col-md-3 text-center mb-4">
+            <div class="mb-3">
+              <i
+                class="fas fa-money-bill-wave"
+                style="font-size: 2.5rem; color: #059669"
+              ></i>
+            </div>
+            <h6 class="fw-bold" style="color: #1f2937">Pagamento Direto</h6>
+            <p style="color: #6b7280; font-size: 0.9rem">
+              100% dos valores vão direto para sua conta PushinPay
+            </p>
+          </div>
+
+          <div class="col-md-3 text-center mb-4">
+            <div class="mb-3">
+              <i
+                class="fas fa-bolt"
+                style="font-size: 2.5rem; color: #ea580c"
+              ></i>
+            </div>
+            <h6 class="fw-bold" style="color: #1f2937">Automático</h6>
+            <p style="color: #6b7280; font-size: 0.9rem">
+              PIX gerado e verificação automática 24/7
+            </p>
+          </div>
+
+          <div class="col-md-3 text-center mb-4">
+            <div class="mb-3">
+              <i
+                class="fas fa-chart-line"
+                style="font-size: 2.5rem; color: #1e40af"
+              ></i>
+            </div>
+            <h6 class="fw-bold" style="color: #1f2937">Taxa Baixa</h6>
+            <p style="color: #6b7280; font-size: 0.9rem">
+              Apenas R$ 0,70 por transação aprovada
+            </p>
+          </div>
+
+          <div class="col-md-3 text-center mb-4">
+            <div class="mb-3">
+              <i
+                class="fas fa-users"
+                style="font-size: 2.5rem; color: #7c3aed"
+              ></i>
+            </div>
+            <h6 class="fw-bold" style="color: #1f2937">Grupos VIP</h6>
+            <p style="color: #6b7280; font-size: 0.9rem">
+              Adição automática aos grupos após pagamento
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  function toggleTokenForm() {
+    const form = document.getElementById("tokenForm");
+    const isHidden = form.style.display === "none";
+
+    if (isHidden) {
+      form.style.display = "block";
+      form.scrollIntoView({ behavior: "smooth" });
+    } else {
+      form.style.display = "none";
+    }
+  }
+</script>
+{% endblock %}

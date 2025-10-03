@@ -94,11 +94,12 @@
                 <i class="fas fa-chevron-right arrow"></i>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
+            <li
+              class="nav-item {% if request.endpoint == 'auth.profile' %}active{% endif %}"
+            >
+              <a href="{{ url_for('auth.profile') }}" class="nav-link">
                 <i class="fas fa-dollar-sign"></i>
                 <span>Pagamentos</span>
-                <i class="fas fa-chevron-right arrow"></i>
               </a>
             </li>
             <li class="nav-item">

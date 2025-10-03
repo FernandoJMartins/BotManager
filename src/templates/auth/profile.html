@@ -1,268 +1,425 @@
-{% extends "base.html" %} {% block title %}Perfil - Telegram Bot Manager{%
+{% extends "base_dark.html" %} {% block title %}Perfil - Telegram Bot Manager{%
 endblock %} {% block content %}
-<div class="row">
+<!-- Dashboard Header (mesmo padrão da dashboard) -->
+<header class="dashboard-header">
+  <div class="header-left">
+    <h1>Meu Perfil</h1>
+    <p>Gerencie suas informações pessoais e configurações da conta</p>
+  </div>
+</header>
+
+<!-- Stats Cards (mesmo padrão da dashboard) -->
+<div class="stats-grid">
   <!-- Informações do perfil -->
-  <div class="col-md-8 mb-4">
-    <div class="card shadow border-0" style="border-radius: 16px">
-      <div
-        class="card-header text-white"
-        style="
-          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-          border-radius: 16px 16px 0 0;
-          padding: 1.5rem;
-        "
-      >
-        <h5 class="mb-0 fw-bold">
-          <i class="fas fa-user-circle me-2" style="font-size: 1.5rem"></i>
-          Meu Perfil
-        </h5>
-      </div>
-      <div class="card-body" style="padding: 2rem">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="fw-semibold" style="color: #1f2937">
-                <i class="fas fa-user me-2" style="color: #1e40af"></i>
-                Username
-              </label>
-              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
-                {{ current_user.username }}
-              </p>
-            </div>
-            <div class="mb-3">
-              <label class="fw-semibold" style="color: #1f2937">
-                <i class="fas fa-envelope me-2" style="color: #1e40af"></i>
-                Email
-              </label>
-              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
-                {{ current_user.email }}
-              </p>
-            </div>
-            <div class="mb-3">
-              <label class="fw-semibold" style="color: #1f2937">
-                <i class="fas fa-calendar me-2" style="color: #1e40af"></i>
-                Membro desde
-              </label>
-              <p class="mb-0" style="font-size: 1.1rem; color: #374151">
-                {{ current_user.created_at.strftime('%d/%m/%Y') }}
-              </p>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="fw-semibold" style="color: #1f2937">
-                <i class="fas fa-robot me-2" style="color: #059669"></i>
-                Total de bots
-              </label>
-              <p
-                class="mb-0"
-                style="font-size: 1.5rem; font-weight: 700; color: #059669"
-              >
-                {{ current_user.bots|length }}
-              </p>
-            </div>
-            <div class="mb-3">
-              <label class="fw-semibold" style="color: #1f2937">
-                <i class="fas fa-play-circle me-2" style="color: #10b981"></i>
-                Bots ativos
-              </label>
-              <p
-                class="mb-0"
-                style="font-size: 1.5rem; font-weight: 700; color: #10b981"
-              >
-                {{ current_user.get_active_bots_count() }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-user"></i>
+        Username
+      </span>
+    </div>
+    <div class="stat-value" style="font-size: 20px">
+      {{ current_user.username }}
     </div>
   </div>
 
-  <!-- Configuração PushinPay -->
-  <div class="col-md-4 mb-4">
-    <div class="card shadow border-0" style="border-radius: 16px">
-      <div
-        class="card-header text-white"
-        style="
-          background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
-          border-radius: 16px 16px 0 0;
-          padding: 1.5rem;
-        "
-      >
-        <h5 class="mb-0 fw-bold">
-          <i class="fas fa-credit-card me-2"></i>
-          PushinPay
-        </h5>
-      </div>
-      <div class="card-body" style="padding: 1.5rem">
-        {% if current_user.pushinpay_token %}
-        <div
-          class="alert alert-success border-0"
-          style="
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-            color: #047857;
-            border-radius: 12px;
-          "
-        >
-          <i class="fas fa-check-circle me-2"></i>
-          <strong>Token configurado!</strong>
-        </div>
-        <button
-          class="btn btn-outline-primary fw-semibold"
-          onclick="toggleTokenForm()"
-          style="border-radius: 10px; border: 2px solid #1e40af"
-        >
-          <i class="fas fa-edit me-2"></i>
-          Alterar Token
-        </button>
-        {% else %}
-        <div
-          class="alert alert-warning border-0"
-          style="
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-            color: #92400e;
-            border-radius: 12px;
-          "
-        >
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          <strong>Token não configurado</strong>
-        </div>
-        {% endif %}
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-envelope"></i>
+        Email
+      </span>
+    </div>
+    <div class="stat-value" style="font-size: 16px">
+      {{ current_user.email }}
+    </div>
+  </div>
 
-        <div
-          id="tokenForm"
-          {%
-          if
-          current_user.pushinpay_token
-          %}style="display:none;"
-          {%
-          endif
-          %}
-        >
-          <form
-            method="POST"
-            action="{{ url_for('auth.save_pushinpay_token') }}"
-          >
-            <div class="mb-3">
-              <label
-                for="token"
-                class="form-label fw-semibold"
-                style="color: #1f2937"
-              >
-                <i class="fas fa-key me-2" style="color: #ea580c"></i>
-                Token Bearer PushinPay
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                id="token"
-                name="token"
-                placeholder="Bearer 11111|XXXXX"
-                required
-                style="
-                  border-radius: 10px;
-                  border: 2px solid #e5e7eb;
-                  padding: 0.75rem;
-                "
-                onfocus="this.style.borderColor='#ea580c'"
-                onblur="this.style.borderColor='#e5e7eb'"
-              />
-              <small class="form-text" style="color: #6b7280">
-                <i class="fas fa-info-circle me-1"></i>
-                Obtenha no painel da PushinPay
-              </small>
-            </div>
-            <button
-              type="submit"
-              class="btn fw-semibold"
-              style="
-                background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                padding: 0.75rem 1.5rem;
-              "
-            >
-              <i class="fas fa-save me-2"></i>
-              Salvar Token
-            </button>
-          </form>
-        </div>
-      </div>
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-robot"></i>
+        Total de Bots
+      </span>
+    </div>
+    <div class="stat-value">{{ current_user.bots|length }}</div>
+    <div class="stat-change positive">
+      {{ current_user.get_active_bots_count() }} ativos
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-calendar"></i>
+        Membro desde
+      </span>
+    </div>
+    <div class="stat-value" style="font-size: 18px">
+      {{ current_user.created_at.strftime('%d/%m/%Y') }}
     </div>
   </div>
 </div>
 
-<!-- Como funciona -->
-<div class="row mt-4">
-  <div class="col-md-12">
-    <div class="card shadow border-0" style="border-radius: 16px">
+<!-- Charts Section (mesmo padrão da dashboard) -->
+<div class="charts-grid">
+  <!-- Configuração de Pagamentos -->
+  <div class="chart-card large">
+    <div class="chart-header">
+      <h3>Configuração de Pagamentos</h3>
+      <div class="chart-legend">
+        <span class="legend-item">
+          <i class="fas fa-credit-card"></i>
+          Configure seu token PushinPay para receber pagamentos
+        </span>
+      </div>
+    </div>
+
+    {% if current_user.pushinpay_token %}
+    <div
+      class="chart-milestone"
+      style="background: var(--success-bg); border-left-color: var(--success)"
+    >
+      <i
+        class="fas fa-check-circle"
+        style="color: var(--success); font-size: 20px"
+      ></i>
+      <div style="flex: 1">
+        <div class="milestone-value" style="color: var(--success)">
+          Token Configurado
+        </div>
+        <div class="milestone-date">
+          Seus bots já podem receber pagamentos automaticamente
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div
+      class="chart-milestone"
+      style="background: rgba(245, 158, 11, 0.1); border-left-color: #f59e0b"
+    >
+      <i
+        class="fas fa-exclamation-triangle"
+        style="color: #f59e0b; font-size: 20px"
+      ></i>
+      <div style="flex: 1">
+        <div class="milestone-value" style="color: #f59e0b">
+          Token Não Configurado
+        </div>
+        <div class="milestone-date">
+          Configure seu token para começar a receber pagamentos
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 20px">
+      <button onclick="toggleTokenForm()" class="btn-primary">
+        <i class="fas fa-cog"></i>
+        {% if current_user.pushinpay_token %}Alterar Token{% else %}Configurar
+        Token{% endif %}
+      </button>
+    </div>
+
+    <!-- Formulário de token (escondido por padrão) -->
+    <div
+      id="tokenForm"
+      style="
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      "
+    >
+      <form method="POST" action="{{ url_for('auth.save_pushinpay_token') }}">
+        <div style="margin-bottom: 16px">
+          <label
+            for="token"
+            style="
+              display: block;
+              margin-bottom: 8px;
+              font-weight: 500;
+              color: var(--text-primary);
+              font-size: 14px;
+            "
+          >
+            <i class="fas fa-key"></i> Token Bearer PushinPay:
+          </label>
+          <input
+            type="text"
+            id="token"
+            name="token"
+            placeholder="Bearer 11111|XXXXXXXXXXXXXXXXXXXXX"
+            required
+            style="
+              width: 100%;
+              padding: 12px;
+              background: rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 8px;
+              color: var(--text-primary);
+              font-family: 'Courier New', monospace;
+              font-size: 14px;
+            "
+          />
+          <small
+            style="
+              color: var(--text-muted);
+              font-size: 12px;
+              margin-top: 4px;
+              display: block;
+            "
+          >
+            <i class="fas fa-info-circle"></i>
+            Obtenha este token no painel administrativo da PushinPay
+          </small>
+        </div>
+        <div style="display: flex; gap: 12px">
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-save"></i>
+            Salvar Token
+          </button>
+          <button
+            type="button"
+            onclick="toggleTokenForm()"
+            class="btn-secondary"
+          >
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Como Funciona -->
+  <div class="chart-card small">
+    <div class="chart-header">
+      <h4>Como Obter o Token</h4>
+    </div>
+
+    <div
+      style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px"
+    >
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div
+          style="
+            width: 24px;
+            height: 24px;
+            background: var(--purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+          "
+        >
+          1
+        </div>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 14px;
+            "
+          >
+            Acesse a PushinPay
+          </div>
+          <div style="color: var(--text-secondary); font-size: 12px">
+            Faça login em sua conta
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div
+          style="
+            width: 24px;
+            height: 24px;
+            background: var(--purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+          "
+        >
+          2
+        </div>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 14px;
+            "
+          >
+            Vá em API/Tokens
+          </div>
+          <div style="color: var(--text-secondary); font-size: 12px">
+            Navegue até tokens de API
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div
+          style="
+            width: 24px;
+            height: 24px;
+            background: var(--purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+          "
+        >
+          3
+        </div>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 14px;
+            "
+          >
+            Copie o Token
+          </div>
+          <div style="color: var(--text-secondary); font-size: 12px">
+            Copie o token Bearer completo
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      style="
+        margin-top: 20px;
+        padding: 12px;
+        background: rgba(139, 92, 246, 0.1);
+        border-radius: 8px;
+        border-left: 3px solid var(--purple);
+      "
+    >
       <div
-        class="card-header text-white"
         style="
-          background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-          border-radius: 16px 16px 0 0;
-          padding: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--purple);
+          font-size: 12px;
+          font-weight: 600;
         "
       >
-        <h5 class="mb-0 fw-bold">
-          <i class="fas fa-lightbulb me-2"></i>
-          Como Funciona o Sistema
-        </h5>
+        <i class="fas fa-shield-alt"></i>
+        Seu token é criptografado e armazenado com segurança
       </div>
-      <div class="card-body" style="padding: 2rem">
-        <div class="row">
-          <div class="col-md-4 mb-4">
-            <div class="text-center">
-              <div class="mb-3">
-                <i
-                  class="fas fa-key"
-                  style="font-size: 3rem; color: #1e40af"
-                ></i>
-              </div>
-              <h6 class="fw-bold" style="color: #1f2937">
-                1. Configure o Token
-              </h6>
-              <p style="color: #6b7280">
-                Adicione seu token da PushinPay uma única vez. Este token será
-                usado para gerar PIX automaticamente para seus clientes.
-              </p>
-            </div>
+    </div>
+  </div>
+
+  <!-- Vantagens -->
+  <div class="chart-card small">
+    <div class="chart-header">
+      <h4>Vantagens da Integração</h4>
+    </div>
+
+    <div
+      style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px"
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 6px;
+        "
+      >
+        <i
+          class="fas fa-money-bill-wave"
+          style="color: var(--success); font-size: 16px"
+        ></i>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 13px;
+            "
+          >
+            Pagamento Direto
           </div>
-          <div class="col-md-4 mb-4">
-            <div class="text-center">
-              <div class="mb-3">
-                <i
-                  class="fas fa-coins"
-                  style="font-size: 3rem; color: #059669"
-                ></i>
-              </div>
-              <h6 class="fw-bold" style="color: #1f2937">
-                2. Pagamento Direto
-              </h6>
-              <p style="color: #6b7280">
-                100% dos pagamentos vão direto para sua conta. Sistema cobra
-                apenas R$ 0,70 por transação.
-              </p>
-            </div>
+          <div style="color: var(--text-secondary); font-size: 11px">
+            100% dos valores para sua conta
           </div>
-          <div class="col-md-4 mb-4">
-            <div class="text-center">
-              <div class="mb-3">
-                <i
-                  class="fas fa-rocket"
-                  style="font-size: 3rem; color: #ea580c"
-                ></i>
-              </div>
-              <h6 class="fw-bold" style="color: #1f2937">
-                3. Ativação Automática
-              </h6>
-              <p style="color: #6b7280">
-                Após confirmação do pagamento, seus bots são ativados
-                automaticamente e funcionam 24/7 sem interrupção.
-              </p>
-            </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 6px;
+        "
+      >
+        <i class="fas fa-bolt" style="color: #f59e0b; font-size: 16px"></i>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 13px;
+            "
+          >
+            Automático 24/7
+          </div>
+          <div style="color: var(--text-secondary); font-size: 11px">
+            PIX gerado e verificado automaticamente
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 6px;
+        "
+      >
+        <i class="fas fa-users" style="color: var(--blue); font-size: 16px"></i>
+        <div>
+          <div
+            style="
+              font-weight: 600;
+              color: var(--text-primary);
+              font-size: 13px;
+            "
+          >
+            Grupos VIP
+          </div>
+          <div style="color: var(--text-secondary); font-size: 11px">
+            Adição automática após pagamento
           </div>
         </div>
       </div>
@@ -275,6 +432,7 @@ endblock %} {% block content %}
     const form = document.getElementById("tokenForm");
     if (form.style.display === "none") {
       form.style.display = "block";
+      form.scrollIntoView({ behavior: "smooth" });
     } else {
       form.style.display = "none";
     }

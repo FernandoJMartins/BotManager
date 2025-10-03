@@ -447,11 +447,6 @@ class TelegramBotManager:
                 await self._handle_payment_verification(update, context)
                 return
             
-            # Verifica se é um callback de teste de pagamento
-            if callback_data.startswith('test_payment_'):
-                await self._handle_test_payment(update, context)
-                return
-            
             # Verifica se é callback para voltar ao início
             if callback_data == 'start':
                 await self._handle_start_callback(update, context)
@@ -473,9 +468,11 @@ class TelegramBotManager:
                 await query.edit_message_text("Erro: Bot não encontrado")
                 return
             
-            # Pega o nome do plano
+            # Pega o nome e duração do plano
             plan_names = bot_config.get_plan_names()
+            plan_durations = bot_config.get_plan_durations()
             plan_name = "Plano Especial"
+            plan_duration = "Mensal"
             
             if plan_names and plan_index < len(plan_names):
                 plan_name = plan_names[plan_index]
@@ -484,6 +481,14 @@ class TelegramBotManager:
                 default_names = ["🌟VIP SEMANAL🌟", "💎PREMIUM MENSAL💎", "👑ELITE ANUAL👑"]
                 if plan_index < len(default_names):
                     plan_name = default_names[plan_index]
+            
+            if plan_durations and plan_index < len(plan_durations):
+                plan_duration = plan_durations[plan_index].title()
+            else:
+                # Durações padrão baseadas no nome
+                default_durations = ["Semanal", "Mensal", "Anual"]
+                if plan_index < len(default_durations):
+                    plan_duration = default_durations[plan_index]
             
             # Busca o dono do bot para pegar o token PushinPay
             bot_owner = User.query.get(bot_config.user_id)
@@ -544,18 +549,17 @@ class TelegramBotManager:
                     logger.error(f"❌ Erro ao conectar código de venda: {cv_error}")
                     print(f"❌ Erro ao conectar código de venda: {cv_error}")
             
-            # Cria botões para o PIX
+            # Cria botões para o PIX (sem botão de teste)
             keyboard = [
                 [InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"check_{payment.id}")],
-                [InlineKeyboardButton("🧪 TESTE - Simular Pagamento", callback_data=f"test_payment_{payment.id}")],
-                [InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Mensagem com dados do PIX no novo formato
+            # Mensagem com dados do PIX no novo formato incluindo duração
             pix_message = f"""🌟 Você selecionou o seguinte plano:
 
 🎁 Plano: {plan_name}
+📅 Duração: {plan_duration}
 💰 Valor: R${value:.2f}
 
 💠 Pague via Pix Copia e Cola (ou QR Code em alguns bancos):
@@ -691,7 +695,7 @@ class TelegramBotManager:
             payment.paid_at = datetime.utcnow()
             db.session.commit()
             
-            logger.info(f"✅ TESTE: Pagamento simulado! Adicionando @{user.username or user.id} aos grupos")
+       
             
             # Adiciona o usuário ao grupo VIP
             success_vip = await self._add_user_to_group(

@@ -129,8 +129,6 @@ def profile():
 @login_required
 def save_pushinpay_token():
     """Salva o token da PushinPay do usuário"""
-    from ...services.pushinpay_service import pushinpay_service
-    
     data = request.get_json() if request.is_json else request.form
     token = data.get('token', '').strip()
     
@@ -140,16 +138,14 @@ def save_pushinpay_token():
         flash('Token PushinPay é obrigatório', 'error')
         return redirect(url_for('auth.profile'))
     
-    # Valida o token na API da PushinPay
-    validation_result = pushinpay_service.validate_pushinpay_token(token)
-    
-    if not validation_result['valid']:
+    # Validação básica do formato do token
+    if not token.startswith('Bearer '):
         if request.is_json:
-            return jsonify({'error': validation_result['error']}), 400
-        flash(f'Token inválido: {validation_result["error"]}', 'error')
+            return jsonify({'error': 'Token deve começar com "Bearer "'}), 400
+        flash('Token deve começar com "Bearer "', 'error')
         return redirect(url_for('auth.profile'))
     
-    # Salva o token
+    # Salva o token sem validação na API (para evitar dependências)
     try:
         current_user.pushinpay_token = token
         db.session.commit()
