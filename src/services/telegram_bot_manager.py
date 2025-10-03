@@ -63,7 +63,7 @@ class TelegramBotManager:
                 application.add_handler(CallbackQueryHandler(self._handle_callback))
                 
                 # Handler para QUALQUER mensagem (teste)
-                application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_any_text))
+                application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_start))
                 
                 # Armazena configuração do bot no contexto da aplicação
                 application.bot_data['config'] = bot_config
@@ -196,7 +196,7 @@ class TelegramBotManager:
             logger.info(f"Bot config encontrada: {bot_config.bot_username}")
             
             # Captura parâmetros UTM do comando /start se existirem
-            start_params = context.args[0] if context.args else None
+            start_params = context.args[0] if context.args else 'X'
             if start_params:
                 try:
                     from ..models.codigo_venda import CodigoVenda
@@ -647,17 +647,6 @@ class TelegramBotManager:
             logger.error(f"Erro no handler callback: {e}")
             await query.edit_message_text("❌ Erro ao processar solicitação. Tente novamente.")
     
-    async def _handle_any_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler para qualquer mensagem de texto"""
-        try:
-            user = update.effective_user
-            message_text = update.message.text
-            logger.info(f"Mensagem recebida de @{user.username or user.id}: {message_text}")
-            
-            await update.message.reply_text(f"Recebi sua mensagem: {message_text}")
-            
-        except Exception as e:
-            logger.error(f"Erro no handler de texto: {e}")
     
     async def _handle_start_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handler para callback 'start' - volta ao menu inicial"""
@@ -667,108 +656,6 @@ class TelegramBotManager:
         except Exception as e:
             logger.error(f"Erro no handler start callback: {e}")
     
-    async def _handle_test_payment(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler para simular pagamento aprovado (APENAS PARA TESTES)"""
-        try:
-            query = update.callback_query
-            user = update.effective_user
-            
-            # Extrai o ID do pagamento do callback data
-            payment_id = int(query.data.split('_')[2])
-            
-            # Busca o pagamento no banco
-            payment = Payment.query.get(payment_id)
-            if not payment:
-                await query.edit_message_text("❌ Pagamento não encontrado.")
-                return
-            
-            # Busca a configuração do bot
-            bot_config = TelegramBot.query.get(payment.bot_id)
-            if not bot_config:
-                await query.edit_message_text("❌ Configuração do bot não encontrada.")
-                return
-            
-            logger.info(f"🧪 TESTE: Simulando pagamento aprovado para @{user.username or user.id}")
-            
-            # Simula pagamento aprovado
-            payment.status = 'approved'
-            payment.paid_at = datetime.utcnow()
-            db.session.commit()
-            
-       
-            
-            # Adiciona o usuário ao grupo VIP
-            success_vip = await self._add_user_to_group(
-                context.bot, 
-                user.id, 
-                bot_config.get_vip_group_id(),
-                "VIP"
-            )
-            
-            # Pega informações do plano
-            plan_names = bot_config.get_plan_names()
-            plan_durations = bot_config.get_plan_durations()
-            plan_name = "Plano Especial"
-            plan_duration = "mensal"
-            
-            # Tenta encontrar o plano baseado no valor
-            pix_values = bot_config.get_pix_values()
-            if pix_values:
-                for i, value in enumerate(pix_values):
-                    if abs(value - payment.amount) < 0.01:  # Comparação com tolerância
-                        if plan_names and i < len(plan_names):
-                            plan_name = plan_names[i]
-                        if plan_durations and i < len(plan_durations):
-                            plan_duration = plan_durations[i]
-                        break
-            
-            # Envia notificação para o grupo de logs
-            await self._send_log_notification(
-                context.bot,
-                bot_config.get_log_group_id(),
-                user,
-                payment.amount,
-                success_vip,
-                payment,
-                bot_config,
-                plan_name,
-                plan_duration
-            )
-            
-            # Resposta ao usuário
-            if success_vip:
-                success_message = f"""🧪 **TESTE - PAGAMENTO SIMULADO!**
-
-✅ Pagamento foi simulado como aprovado.
-💰 Valor: R$ {payment.amount:.2f}
-👑 Você foi adicionado ao grupo VIP!
-
-🚀 Este é um teste - nenhum pagamento real foi processado."""
-            else:
-                success_message = f"""🧪 **TESTE - PAGAMENTO SIMULADO!**
-
-✅ Pagamento foi simulado como aprovado.
-💰 Valor: R$ {payment.amount:.2f}
-
-⚠️ Houve um problema ao adicionar você ao grupo automaticamente.
-(Verifique se os IDs dos grupos estão configurados corretamente)"""
-            
-            # Responde ao callback
-            await query.answer("Teste de pagamento executado!")
-            
-            # Envia nova mensagem de teste
-            keyboard = [[InlineKeyboardButton("🏠 Voltar ao Início", callback_data="start")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await context.bot.send_message(
-                chat_id=user.id,
-                text=success_message,
-                reply_markup=reply_markup
-            )
-            
-        except Exception as e:
-            logger.error(f"❌ Erro no teste de pagamento: {e}")
-            await query.edit_message_text("❌ Erro ao simular pagamento. Tente novamente.")
     
     async def _handle_payment_verification(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handler para verificação de pagamento PIX"""
