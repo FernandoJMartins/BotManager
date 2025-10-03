@@ -59,6 +59,18 @@ endblock %} {% block content %}
       {{ current_user.created_at.strftime('%d/%m/%Y') }}
     </div>
   </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">
+        <i class="fas fa-user"></i>
+        Taxa
+      </span>
+    </div>
+    <div class="stat-value" style="font-size: 20px">
+      {{ current_user.fee }} R$ por transação
+    </div>
+  </div>
 </div>
 
 <!-- Charts Section (mesmo padrão da dashboard) -->

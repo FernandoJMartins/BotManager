@@ -117,7 +117,8 @@ def profile():
         'email': current_user.email,
         'created_at': current_user.created_at.isoformat(),
         'active_bots': current_user.get_active_bots_count(),
-        'total_bots': len(current_user.bots)
+        'total_bots': len(current_user.bots),
+        'fee': current_user.fee,
     }
     
     if request.is_json:
