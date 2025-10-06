@@ -45,6 +45,8 @@ services:
       - ./src:/app/src
       - ./config:/app/config
       - ./requirements.txt:/app/requirements.txt
+    env_file:
+      - ./src/.env
     environment:
       - DATABASE_URL=postgresql://utmify_db_user:sG1j21EC5VMC5GVUnpTWxXlwRtZdo2EH@dpg-d2ae35uuk2gs739vkusg-a.oregon-postgres.render.com/utmify_db
       - SECRET_KEY=sua-chave-secreta-muito-forte-aqui-123

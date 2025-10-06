@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY src/ ./src/
 
-# Copy the environment variables example
-COPY .env.example .env
+# Copy the environment variables file from src/env to container root as .env
+COPY src/env .env
 
 # Expose the port the app runs on
 EXPOSE 5000
