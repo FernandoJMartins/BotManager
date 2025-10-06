@@ -15,7 +15,7 @@ bots_bp = Blueprint('bots', __name__, url_prefix='/bots')
 
 # Configurações de upload
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'ogg'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'ogg', 'mp4', 'avi', 'mov', 'mkv', 'webm'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -375,6 +375,17 @@ def create_bot():
                                 time.sleep(1)
                                 logger.info("⏳ Delay de 1 segundo aplicado")
                                 
+                                # Determinar o tipo correto para o Telegram API
+                                telegram_media_type = validation['media_type']
+                                
+                                # Para vídeos, garantir que o tipo está correto
+                                if validation['media_type'] == 'video':
+                                    telegram_media_type = 'video'
+                                elif validation['media_type'] == 'photo':
+                                    telegram_media_type = 'photo'
+                                
+                                logger.info(f"🎬 Tipo final para Telegram: {telegram_media_type}")
+                                
                                 # ESTE É O PONTO CRÍTICO - vamos logar tudo sobre o upload
                                 logger.info("🚀 CHAMANDO run_async_media_upload...")
                                 file_id = run_async_media_upload(
@@ -382,7 +393,7 @@ def create_bot():
                                     temp_path,
                                     bot.id_logs,
                                     bot_id,
-                                    validation['media_type']
+                                    telegram_media_type  # Usar o tipo correto
                                 )
                                 logger.info(f"📥 RETORNO do run_async_media_upload: {file_id}")
                                 logger.info(f"📋 Tipo do retorno: {type(file_id)}")
@@ -394,7 +405,7 @@ def create_bot():
                                     if validation['media_type'] == 'video':
                                         bot.welcome_video_file_id = file_id
                                         logger.info(f"💾 SALVANDO vídeo file_id no campo welcome_video_file_id: {file_id}")
-                                    else:
+                                    else:  # photo/image
                                         bot.welcome_image_file_id = file_id
                                         logger.info(f"💾 SALVANDO imagem file_id no campo welcome_image_file_id: {file_id}")
                                     
@@ -817,26 +828,40 @@ def edit_bot(slug):
                         # Valida arquivo
                         validation = media_service.validate_media_file(file)
                         
-                        if validation['valid'] and validation['media_type'] == 'photo':
+                        # CORREÇÃO: Aceita tanto photo quanto video
+                        if validation['valid'] and validation['media_type'] in ['photo', 'video']:
                             # Cria arquivo temporário
                             temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot.id}_img_")
                             
                             try:
                                 # Faz upload para Telegram se tiver grupo de logs configurado
                                 if bot.id_logs:
+                                    # Usa o tipo correto baseado na validação
+                                    upload_type = validation['media_type']  # 'photo' ou 'video'
+                                    
                                     file_id = run_async_media_upload(
                                         bot.bot_token,
                                         temp_path,
                                         bot.id_logs,
                                         bot.id,
-                                        'photo'
+                                        upload_type  # Usar o tipo correto
                                     )
                                     
                                     if file_id:
-                                        bot.welcome_image_file_id = file_id
+                                        # Salva no campo correto baseado no tipo
+                                        if validation['media_type'] == 'video':
+                                            bot.welcome_video_file_id = file_id
+                                            # Limpa outros campos de mídia
+                                            bot.welcome_image_file_id = None
+                                            logger.info(f"✅ Vídeo enviado para Telegram. File ID: {file_id}")
+                                        else:  # photo
+                                            bot.welcome_image_file_id = file_id
+                                            # Limpa outros campos de mídia
+                                            bot.welcome_video_file_id = None
+                                            logger.info(f"✅ Imagem enviada para Telegram. File ID: {file_id}")
+                                        
                                         # Remove referência ao arquivo local antigo se existir
                                         bot.welcome_image = None
-                                        logger.info(f"✅ Imagem enviada para Telegram. File ID: {file_id}")
                                     else:
                                         logger.warning("⚠️  Falha no upload para Telegram, mantendo arquivo local")
                                         # Fallback: salva localmente se o upload falhar
@@ -858,10 +883,10 @@ def edit_bot(slug):
                             finally:
                                 media_service.cleanup_temp_file(temp_path)
                         else:
-                            flash(f'Erro na validação da imagem: {validation.get("error", "Arquivo inválido")}', 'error')
+                            flash(f'Erro na validação da mídia: {validation.get("error", "Arquivo inválido")}. Tipos suportados: imagens e vídeos.', 'error')
                     except Exception as e:
-                        logger.error(f"❌ Erro ao processar imagem: {e}")
-                        flash('Erro ao processar imagem. Tente novamente.', 'error')
+                        logger.error(f"❌ Erro ao processar mídia: {e}")
+                        flash('Erro ao processar mídia. Tente novamente.', 'error')
 
             if 'welcome_audio' in request.files:
                 file = request.files['welcome_audio']

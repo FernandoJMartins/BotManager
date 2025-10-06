@@ -152,13 +152,13 @@
                 class="form-file"
                 id="welcome_image"
                 name="welcome_image"
-                accept="image/*,video/*"
+                accept="image/*,video/mp4,video/avi,video/mov,video/mkv,video/webm"
                 onchange="handleMediaUpload(this)"
               />
               <label for="welcome_image" class="file-label">
                 <i class="fas fa-cloud-upload-alt me-2"></i>
                 <span class="upload-text">{{ 'Alterar Mídia' if (bot.welcome_image_file_id or bot.welcome_video_file_id or bot.welcome_image) else 'Escolher Mídia' }}</span>
-                <span class="upload-limit">(Máx: 25MB)</span>
+                <span class="upload-limit">(Máx: 50MB)</span>
               </label>
             </div>
             
@@ -167,7 +167,7 @@
             
             <small class="form-hint">
               <strong>Formatos suportados:</strong><br>JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM<br>
-              <strong>Tamanho máximo:</strong> 25MB
+              <strong>Tamanho máximo:</strong> 50MB
             </small>
           </div>
 
@@ -422,6 +422,32 @@
     const uploadLimit = fileLabel.querySelector('.upload-limit');
     
     if (file) {
+      // Validar formato
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 
+        'video/webm', 'video/x-matroska'
+      ];
+      
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        alert('Formato de arquivo não suportado! Use: JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM');
+        input.value = '';
+        return;
+      }
+      
+      // Validar tamanho baseado no tipo
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
+      
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / 1024 / 1024;
+        const fileSizeMB = file.size / 1024 / 1024;
+        alert(`Arquivo muito grande! Tamanho: ${fileSizeMB.toFixed(1)}MB, Máximo: ${maxSizeMB}MB`);
+        input.value = '';
+        return;
+      }
+      
       // Atualizar o visual do botão
       uploadText.textContent = file.name;
       uploadLimit.textContent = `(${formatFileSize(file.size)})`;
@@ -429,9 +455,6 @@
       
       // Mostrar preview
       previewContainer.style.display = 'block';
-      
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
       
       let previewHTML = `
         <div class="file-info">
@@ -441,6 +464,7 @@
           <div class="file-details">
             <span class="file-name">${file.name}</span>
             <span class="file-size">${formatFileSize(file.size)}</span>
+            <span class="file-type">${isVideo ? 'Vídeo' : isImage ? 'Imagem' : 'Arquivo'}</span>
           </div>
           <button type="button" class="remove-file-btn" onclick="clearMediaSelection()">
             <i class="fas fa-times"></i>
@@ -452,6 +476,17 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           previewHTML += `<img src="${e.target.result}" alt="Preview" class="media-preview-img">`;
+          previewContainer.innerHTML = previewHTML;
+        };
+        reader.readAsDataURL(file);
+      } else if (isVideo) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewHTML += `
+            <video controls class="media-preview-video">
+              <source src="${e.target.result}" type="${file.type}">
+              Seu navegador não suporta o elemento de vídeo.
+            </video>`;
           previewContainer.innerHTML = previewHTML;
         };
         reader.readAsDataURL(file);
@@ -510,7 +545,7 @@
     previewContainer.style.display = 'none';
     previewContainer.innerHTML = '';
     uploadText.textContent = 'Alterar Mídia';
-    uploadLimit.textContent = '(Máx: 25MB)';
+    uploadLimit.textContent = '(Máx: 50MB)';
     fileLabel.classList.remove('file-selected');
   }
 
@@ -1151,6 +1186,20 @@
     max-height: 200px;
     border-radius: 8px;
     object-fit: cover;
+  }
+
+  .media-preview-video {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    background: #000;
+  }
+  
+  .file-type {
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
   }
 
   .audio-preview {

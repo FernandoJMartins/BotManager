@@ -233,11 +233,18 @@ async def upload_media_to_telegram(bot_token: str, file_path: str, chat_id: str,
                     file_id = message.photo[-1].file_id  # Pega a maior resolução
                     
                 elif media_type == 'video':
+                    # Verificar tamanho para vídeos (50MB limite do Telegram)
+                    max_video_size = 50 * 1024 * 1024  # 50MB
+                    if file_size > max_video_size:
+                        logger.error(f"❌ Vídeo muito grande: {file_size/1024/1024:.1f}MB (máx: 50MB)")
+                        raise ValueError(f"Vídeo muito grande: {file_size/1024/1024:.1f}MB")
+                    
                     message = await bot.send_video(
                         chat_id=chat_id,
                         video=media_file,
-                        read_timeout=120,
-                        write_timeout=120,
+                        supports_streaming=True,  # Melhor para vídeos grandes
+                        read_timeout=180,  # 3 minutos para vídeos
+                        write_timeout=180,
                         connect_timeout=30
                     )
                     file_id = message.video.file_id
@@ -272,7 +279,14 @@ async def upload_media_to_telegram(bot_token: str, file_path: str, chat_id: str,
         except Exception as e:
             logger.error(f"❌ Tentativa {attempt + 1} falhou: {e}")
             
-            if attempt < max_retries - 1:
+            # Log específico para diferentes tipos de erro
+            if "File too large" in str(e) or "Request Entity Too Large" in str(e):
+                logger.error(f"❌ ERRO: Arquivo muito grande para o Telegram")
+                return None  # Não retry para arquivos muito grandes
+            elif "Bad Request" in str(e) and "invalid file" in str(e).lower():
+                logger.error(f"❌ ERRO: Arquivo corrompido ou formato inválido")
+                return None  # Não retry para arquivos inválidos
+            elif attempt < max_retries - 1:
                 # Espera antes da próxima tentativa
                 wait_time = (attempt + 1) * 5  # 5, 10, 15 segundos
                 logger.info(f"⏳ Aguardando {wait_time}s antes da próxima tentativa...")
