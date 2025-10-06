@@ -6,11 +6,13 @@ Envia arquivos para grupo de notificações e retorna file_id para armazenamento
 import os
 import asyncio
 import tempfile
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 from telegram import Bot
 from telegram.error import TelegramError
-from ..utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 class TelegramMediaService:
     """Serviço para gerenciar upload e armazenamento de mídia via Telegram"""
@@ -140,90 +142,55 @@ class TelegramMediaService:
             logger.error(f"❌ Erro geral ao enviar mídia via file_id: {e}")
             return False
     
-    def validate_media_file(self, file, allowed_types: dict = None) -> Dict[str, Any]:
-        """
-        Valida arquivo de mídia
-        
-        Args:
-            file: Arquivo do upload
-            allowed_types: Tipos permitidos
-            
-        Returns:
-            Dict com informações da validação
-        """
+    def validate_media_file(self, file) -> Dict[str, Any]:
+        """Valida arquivo de mídia"""
         if not file or not file.filename:
-            return {
-                'valid': False,
-                'error': 'Nenhum arquivo selecionado'
-            }
+            return {'valid': False, 'error': 'Nenhum arquivo fornecido'}
         
-        # Tipos padrão permitidos
-        if allowed_types is None:
-            allowed_types = {
-                'photo': ['png', 'jpg', 'jpeg', 'gif'],
-                'audio': ['mp3', 'wav', 'ogg', 'm4a'],
-                'video': ['mp4', 'avi', 'mkv', 'mov']
-            }
-        
-        # Obtém extensão
         filename = file.filename.lower()
-        extension = filename.rsplit('.', 1)[1] if '.' in filename else ''
         
-        # Determina tipo de mídia
-        media_type = None
-        for type_name, extensions in allowed_types.items():
-            if extension in extensions:
-                media_type = type_name
-                break
+        # Validação específica para OGG
+        if filename.endswith('.ogg') or filename.endswith('.opus'):
+            from ..api.routes.bots import validate_ogg_audio_file
+            return validate_ogg_audio_file(file)
         
-        if not media_type:
-            return {
-                'valid': False,
-                'error': f'Tipo de arquivo não suportado: .{extension}'
-            }
-        
-        # Verifica tamanho (25MB = 25 * 1024 * 1024 bytes)
-        max_size = 25 * 1024 * 1024
-        if hasattr(file, 'content_length') and file.content_length > max_size:
-            return {
-                'valid': False,
-                'error': 'Arquivo muito grande. Máximo: 25MB'
-            }
-        
-        return {
-            'valid': True,
-            'media_type': media_type,
-            'extension': extension,
-            'filename': filename
-        }
+        # Validações para outros tipos
+        if filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            return {'valid': True, 'media_type': 'photo'}
+        elif filename.endswith(('.mp4', '.avi', '.mov', '.mkv', '.webm')):
+            return {'valid': True, 'media_type': 'video'}
+        elif filename.endswith(('.mp3', '.wav', '.m4a')):
+            return {'valid': True, 'media_type': 'audio'}
+        else:
+            return {'valid': False, 'error': 'Formato de arquivo não suportado'}
     
-    def create_temp_file(self, file, prefix: str = "media_") -> str:
-        """
-        Cria arquivo temporário para upload
+    def create_temp_file(self, file, prefix: str = "temp_") -> str:
+        """Cria arquivo temporário para upload"""
+        # Reset file pointer
+        file.seek(0)
         
-        Args:
-            file: Arquivo do upload
-            prefix: Prefixo do arquivo temporário
-            
-        Returns:
-            Caminho do arquivo temporário
-        """
+        # Extrai extensão do arquivo original
+        _, ext = os.path.splitext(file.filename)
+        
         # Cria arquivo temporário
-        temp_fd, temp_path = tempfile.mkstemp(
-            suffix=f".{file.filename.rsplit('.', 1)[1]}" if '.' in file.filename else '',
-            prefix=prefix
-        )
+        temp_fd, temp_path = tempfile.mkstemp(suffix=ext, prefix=prefix)
         
         try:
-            # Salva o arquivo
+            # Escreve o conteúdo do arquivo no arquivo temporário
             with os.fdopen(temp_fd, 'wb') as temp_file:
-                file.save(temp_file)
+                file.seek(0)  # Garante que está no início
+                temp_file.write(file.read())
+            
+            logger.info(f"📂 Arquivo temporário criado: {temp_path}")
             return temp_path
+            
         except Exception as e:
-            # Remove arquivo em caso de erro
-            os.close(temp_fd)
-            if os.path.exists(temp_path):
+            # Se houve erro, limpa o arquivo temporário
+            try:
+                os.close(temp_fd)
                 os.unlink(temp_path)
+            except:
+                pass
             raise e
     
     def cleanup_temp_file(self, temp_path: str):
@@ -231,22 +198,107 @@ class TelegramMediaService:
         try:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
-                logger.info(f"🗑️  Arquivo temporário removido: {temp_path}")
+                logger.info(f"🗑️ Arquivo temporário removido: {temp_path}")
         except Exception as e:
-            logger.warning(f"⚠️  Erro ao remover arquivo temporário {temp_path}: {e}")
+            logger.warning(f"⚠️ Erro ao remover arquivo temporário {temp_path}: {e}")
 
-# Função auxiliar para uso em rotas síncronas
-def run_async_media_upload(bot_token: str, file_path: str, log_group_id: str, bot_id: int, media_type: str) -> Optional[str]:
-    """Wrapper síncrono para upload de mídia"""
+async def upload_media_to_telegram(bot_token: str, file_path: str, chat_id: str, media_type: str) -> Optional[str]:
+    """Upload de mídia para o Telegram com retry e melhor tratamento de erros"""
+    bot = Bot(token=bot_token)
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"🚀 Tentativa {attempt + 1}/{max_retries} de upload para {chat_id}")
+            logger.info(f"📁 Arquivo: {file_path}")
+            logger.info(f"🏷️ Tipo: {media_type}")
+            
+            # Verifica se arquivo existe
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
+            
+            # Verifica tamanho do arquivo
+            file_size = os.path.getsize(file_path)
+            logger.info(f"📊 Tamanho do arquivo: {file_size / 1024 / 1024:.2f}MB")
+            
+            with open(file_path, 'rb') as media_file:
+                if media_type == 'photo':
+                    message = await bot.send_photo(
+                        chat_id=chat_id,
+                        photo=media_file,
+                        read_timeout=60,
+                        write_timeout=60,
+                        connect_timeout=30
+                    )
+                    file_id = message.photo[-1].file_id  # Pega a maior resolução
+                    
+                elif media_type == 'video':
+                    message = await bot.send_video(
+                        chat_id=chat_id,
+                        video=media_file,
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=30
+                    )
+                    file_id = message.video.file_id
+                    
+                elif media_type == 'voice' or (media_type == 'audio' and file_path.endswith('.ogg')):
+                    # Para arquivos OGG, sempre usar como voice message
+                    message = await bot.send_voice(
+                        chat_id=chat_id,
+                        voice=media_file,
+                        read_timeout=60,
+                        write_timeout=60,
+                        connect_timeout=30
+                    )
+                    file_id = message.voice.file_id
+                    
+                elif media_type == 'audio':
+                    message = await bot.send_audio(
+                        chat_id=chat_id,
+                        audio=media_file,
+                        read_timeout=60,
+                        write_timeout=60,
+                        connect_timeout=30
+                    )
+                    file_id = message.audio.file_id
+                    
+                else:
+                    raise ValueError(f"Tipo de mídia não suportado: {media_type}")
+            
+            logger.info(f"✅ Upload bem-sucedido! File ID: {file_id}")
+            return file_id
+            
+        except Exception as e:
+            logger.error(f"❌ Tentativa {attempt + 1} falhou: {e}")
+            
+            if attempt < max_retries - 1:
+                # Espera antes da próxima tentativa
+                wait_time = (attempt + 1) * 5  # 5, 10, 15 segundos
+                logger.info(f"⏳ Aguardando {wait_time}s antes da próxima tentativa...")
+                await asyncio.sleep(wait_time)
+            else:
+                logger.error(f"❌ Todas as tentativas de upload falharam")
+                return None
+
+def run_async_media_upload(bot_token: str, file_path: str, chat_id: str, bot_id: int, media_type: str) -> Optional[str]:
+    """Wrapper síncrono para upload assíncrono de mídia"""
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        service = TelegramMediaService(bot_token)
+        # Cria novo loop se necessário
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Executa upload
         return loop.run_until_complete(
-            service.upload_media_to_telegram(file_path, log_group_id, bot_id, media_type)
+            upload_media_to_telegram(bot_token, file_path, chat_id, media_type)
         )
+        
     except Exception as e:
-        logger.error(f"❌ Erro no upload síncrono: {e}")
+        logger.error(f"❌ Erro no wrapper assíncrono: {e}")
         return None
-    finally:
-        loop.close()

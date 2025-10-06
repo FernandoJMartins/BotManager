@@ -20,6 +20,56 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'ogg'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def validate_ogg_audio_file(file):
+    """Valida especificamente arquivos de áudio OGG para voice messages do Telegram"""
+    if not file or not file.filename:
+        return {'valid': False, 'error': 'Nenhum arquivo de áudio fornecido'}
+    
+    filename = file.filename.lower()
+    logger.info(f"🔍 Validando arquivo OGG: {filename}")
+    
+    # Aceitar apenas OGG e OPUS por extensão
+    if not (filename.endswith('.ogg') or filename.endswith('.opus')):
+        return {
+            'valid': False, 
+            'error': f'Apenas arquivos .ogg ou .opus são aceitos. Arquivo enviado: {filename}'
+        }
+    
+    # Verificar MIME type de forma flexível (OGG tem vários MIME types)
+    if hasattr(file, 'content_type') and file.content_type:
+        valid_mime_types = [
+            'audio/ogg',
+            'application/ogg', 
+            'audio/opus',
+            'audio/ogg; codecs=opus',
+            'application/octet-stream'  # Alguns browsers usam este para OGG
+        ]
+        
+        mime_ok = any(mime in file.content_type.lower() for mime in valid_mime_types)
+        logger.info(f"📋 MIME type: {file.content_type}, Válido: {mime_ok}")
+        
+        if not mime_ok and file.content_type.strip() != '':
+            logger.warning(f"⚠️ MIME type suspeito para OGG: {file.content_type}")
+            # Não falha por causa do MIME type, apenas avisa
+    
+    # Verificar tamanho (20MB para voice messages do Telegram)
+    max_size = 20 * 1024 * 1024  # 20MB
+    if hasattr(file, 'content_length') and file.content_length:
+        if file.content_length > max_size:
+            size_mb = file.content_length / 1024 / 1024
+            return {
+                'valid': False, 
+                'error': f'Arquivo muito grande: {size_mb:.1f}MB. Limite: 20MB para voice messages'
+            }
+        
+        if file.content_length == 0:
+            return {'valid': False, 'error': 'Arquivo está vazio'}
+        
+        logger.info(f"📊 Tamanho do arquivo: {file.content_length / 1024 / 1024:.1f}MB")
+    
+    logger.info("✅ Arquivo OGG passou na validação!")
+    return {'valid': True, 'media_type': 'audio', 'file_type': 'ogg_voice'}
+
 @bots_bp.route('/', methods=['GET'])
 @login_required
 def list_bots():
@@ -444,15 +494,25 @@ def create_bot():
                     # Reset file pointer
                     audio_file.seek(0)
                     
-                    # NOVA INSTÂNCIA do serviço para evitar conflitos
-                    audio_service = TelegramMediaService(bot.bot_token)
-                    validation = audio_service.validate_media_file(audio_file)
+                    # Validação específica para OGG antes de processar
+                    if audio_file.filename.lower().endswith('.ogg'):
+                        logger.info("🔍 Detectado arquivo OGG - usando validação específica")
+                        validation = validate_ogg_audio_file(audio_file)
+                    else:
+                        # NOVA INSTÂNCIA do serviço para evitar conflitos
+                        audio_service = TelegramMediaService(bot.bot_token)
+                        validation = audio_service.validate_media_file(audio_file)
                     
                     if validation['valid'] and validation['media_type'] == 'audio':
                         logger.info("✅ Áudio validado")
                         
                         # Reset novamente antes de criar arquivo temporário
                         audio_file.seek(0)
+                        
+                        # Criar serviço de mídia se não foi criado
+                        if 'audio_service' not in locals():
+                            audio_service = TelegramMediaService(bot.bot_token)
+                        
                         temp_path = audio_service.create_temp_file(audio_file, prefix=f"bot_{bot_id}_audio_")
                         logger.info(f"📂 Arquivo temporário de áudio criado: {temp_path}")
                         
@@ -464,17 +524,20 @@ def create_bot():
                                 import time
                                 time.sleep(2)
                                 
+                                # Para OGG, especificar que é voice message
+                                media_type = 'voice' if audio_file.filename.lower().endswith('.ogg') else 'audio'
+                                
                                 file_id = run_async_media_upload(
                                     bot.bot_token,
                                     temp_path,
                                     bot.id_logs,
                                     bot_id,
-                                    'audio'
+                                    media_type
                                 )
                                 
                                 logger.info(f"📥 RESULTADO upload áudio: {file_id}")
                                 
-                                if file_id:
+                                if file_id and file_id != "None" and str(file_id).strip():
                                     bot.welcome_audio_file_id = file_id
                                     bot.welcome_audio = None
                                     audio_processed = True
@@ -482,6 +545,11 @@ def create_bot():
                                     # COMMIT IMEDIATO para salvar file_id do áudio
                                     db.session.flush()
                                     logger.info("✅ ÁUDIO SALVO NO BANCO com sucesso!")
+                                    
+                                    # Verificar se realmente foi salvo
+                                    logger.info(f"🔍 Verificação pós-save áudio:")
+                                    logger.info(f"   - welcome_audio_file_id: {bot.welcome_audio_file_id}")
+                                    logger.info(f"   - welcome_audio (legado): {bot.welcome_audio}")
                                     
                                 else:
                                     logger.error("❌ Upload de áudio retornou file_id vazio!")

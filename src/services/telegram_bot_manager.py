@@ -370,16 +370,32 @@ class TelegramBotManager:
                 
                 for attempt in range(2):
                     try:
-                        await update.message.reply_audio(
-                            audio=bot_config.welcome_audio_file_id,
+                        # Para OGG, sempre usar como voice message
+                        await update.message.reply_voice(
+                            voice=bot_config.welcome_audio_file_id,
                             read_timeout=45,
                             write_timeout=45,
                             connect_timeout=30
                         )
-                        logger.info(f"✅ Áudio enviado com sucesso via file_id")
+                        logger.info(f"✅ Áudio enviado com sucesso via file_id como voice message")
                         return True
                     except Exception as audio_error:
                         logger.warning(f"⚠️ Tentativa {attempt + 1} falhou ao enviar áudio: {audio_error}")
+                        
+                        # Se falhar como voice, tenta como audio
+                        if attempt == 0:
+                            try:
+                                await update.message.reply_audio(
+                                    audio=bot_config.welcome_audio_file_id,
+                                    read_timeout=45,
+                                    write_timeout=45,
+                                    connect_timeout=30
+                                )
+                                logger.info(f"✅ Áudio enviado com sucesso via file_id como audio")
+                                return True
+                            except Exception as audio_error2:
+                                logger.warning(f"⚠️ Também falhou como audio: {audio_error2}")
+                        
                         if attempt < 1:
                             await asyncio.sleep(2)
             
@@ -397,8 +413,8 @@ class TelegramBotManager:
                             logger.error(f"❌ Áudio muito grande: {file_size/1024/1024:.1f}MB")
                         else:
                             with open(bot_config.welcome_audio, 'rb') as audio_file:
-                                await update.message.reply_audio(
-                                    audio=audio_file,
+                                await update.message.reply_voice(
+                                    voice=audio_file,
                                     read_timeout=45,
                                     write_timeout=45,
                                     connect_timeout=30

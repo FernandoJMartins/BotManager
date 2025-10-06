@@ -117,21 +117,19 @@ class TelegramBotRunner:
             if self.bot_config.welcome_message:
                 await update.message.reply_text(self.bot_config.welcome_message)
             
-            # Envia imagem de boas-vindas se configurada
-            if self.bot_config.welcome_image:
+            # Envia imagem de boas-vindas se configurada (APENAS via file_id)
+            if self.bot_config.welcome_image_file_id:
                 try:
-                    with open(self.bot_config.welcome_image, 'rb') as photo:
-                        await update.message.reply_photo(photo=photo)
+                    await update.message.reply_photo(photo=self.bot_config.welcome_image_file_id)
                 except Exception as e:
-                    logger.error(f"Erro ao enviar imagem: {e}")
+                    logger.error(f"Erro ao enviar imagem via file_id: {e}")
             
-            # Envia áudio de boas-vindas se configurado
-            if self.bot_config.welcome_audio:
+            # Envia áudio de boas-vindas se configurado (APENAS via file_id)
+            if self.bot_config.welcome_audio_file_id:
                 try:
-                    with open(self.bot_config.welcome_audio, 'rb') as audio:
-                        await update.message.reply_audio(audio=audio)
+                    await update.message.reply_voice(voice=self.bot_config.welcome_audio_file_id)
                 except Exception as e:
-                    logger.error(f"Erro ao enviar áudio: {e}")
+                    logger.error(f"Erro ao enviar áudio via file_id: {e}")
             
             # Envia botões PIX se configurados
             await self._send_pix_buttons(update)
