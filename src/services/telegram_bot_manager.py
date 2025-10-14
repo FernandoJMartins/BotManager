@@ -6,6 +6,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMe
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 import urllib3
 
+from ..services.offer_service import offer_service
+
+
 # Desabilita warnings SSL temporariamente para resolver problema de conectividade
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from ..models.bot import TelegramBot
@@ -468,12 +471,19 @@ class TelegramBotManager:
                 await self._handle_start_callback(update, context)
                 return
             
+            if callback_data.startswith('order_bump_accept_'):
+                await self._handle_order_bump_accept(update, context)
+                return
+            if callback_data.startswith('order_bump_decline_'):
+                await self._handle_order_bump_decline(update, context)
+                return
+
             # Parse do callback data: "pix_19.90_1_0" (valor_bot_id_plan_index)
             callback_parts = callback_data.split('_')
             if len(callback_parts) < 3 or callback_parts[0] != 'pix':
                 await query.edit_message_text("Erro: Dados inválidos")
                 return
-            
+
             value = float(callback_parts[1])
             bot_id = int(callback_parts[2])
             plan_index = int(callback_parts[3]) if len(callback_parts) > 3 else 0
@@ -483,181 +493,40 @@ class TelegramBotManager:
             if not bot_config:
                 await query.edit_message_text("Erro: Bot não encontrado")
                 return
-            
-            # Pega o nome e duração do plano
-            plan_names = bot_config.get_plan_names()
-            plan_durations = bot_config.get_plan_durations()
-            plan_name = "Plano Especial"
-            plan_duration = "Mensal"
-            
-            if plan_names and plan_index < len(plan_names):
-                plan_name = plan_names[plan_index]
-            else:
-                # Nomes padrão
-                default_names = ["🌟VIP SEMANAL🌟", "💎PREMIUM MENSAL💎", "👑ELITE ANUAL👑"]
-                if plan_index < len(default_names):
-                    plan_name = default_names[plan_index]
-            
-            if plan_durations and plan_index < len(plan_durations):
-                plan_duration = plan_durations[plan_index].title()
-            else:
-                # Durações padrão baseadas no nome
-                default_durations = ["Semanal", "Mensal", "Anual"]
-                if plan_index < len(default_durations):
-                    plan_duration = default_durations[plan_index]
-            
-            # Busca o dono do bot para pegar o token PushinPay
-            bot_owner = User.query.get(bot_config.user_id)
 
-            logger.info(f"TOKEN PUSHIN: {bot_owner.pushinpay_token}")
+            order_bump = offer_service.get_active_order_bump(bot_id)
+            
+            if (order_bump):
+                telegram_user_id = update.effective_user.id
 
-            if not bot_owner or not bot_owner.pushinpay_token:
-                await query.edit_message_text("Erro: Sistema de pagamento indisponível")
+                already_accepted = offer_service.has_accepted_offer(
+                    telegram_user_id,
+                    order_bump.id
+                )
+
+                context.user_data['pending_main_payment'] = {
+                    'value': value,
+                    'bot_id': bot_id,
+                    'plan_index': plan_index
+                }
+
+                # Mostra Order Bump (sem editar mensagem original)
+                await self._show_order_bump(update, context, order_bump, bot_config)
                 return
             
-            # Gera PIX via PushinPay
-            user = update.effective_user
-            description = f"Pagamento R$ {value:.2f} - Bot {bot_config.bot_username}"
-            
-            pix_data = self.pushinpay_service.create_pix_payment(
-                user_pushinpay_token=bot_owner.pushinpay_token,
-                amount=value,
-                telegram_user_id=str(user.id),
-                description=description
+            # Envia mensagem de loading antes de gerar PIX
+            loading_message = await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="⏳ Aguarde um momento, estamos gerando seu pagamento..."
             )
             
-            if not pix_data.get('success'):
-                await query.edit_message_text(
-                    f"❌ Erro ao gerar PIX: {pix_data.get('error', 'Erro desconhecido')}"
-                )
-                return
+            # Armazena ID da mensagem de loading
+            context.user_data['loading_message_id'] = loading_message.message_id
             
-            # Salva pagamento no banco com informações do usuário do Telegram
-            payment = Payment(
-                pix_code=pix_data['pix_code'],
-                amount=value,
-                pix_key=pix_data.get('pix_copy_paste', ''),
-                pix_qr_code=pix_data.get('qr_code', ''),
-                expires_at=pix_data.get('expires_at'),
-                user_id=bot_config.user_id,  # Dono do bot
-                bot_id=bot_config.id,
-                # Informações do usuário do Telegram que está fazendo o pagamento
-                telegram_user_id=user.id,
-                telegram_username=user.username,
-                telegram_first_name=user.first_name,
-                telegram_last_name=user.last_name
+            # Gera PIX normal
+            await self._generate_pix_payment(
+                update, context, bot_config, value, plan_index
             )
-            
-            db.session.add(payment)
-            db.session.commit()
-            
-            # Conecta com código de venda se existir
-            codigo_venda_id = context.user_data.get('codigo_venda_id')
-            if codigo_venda_id:
-                try:
-                    from ..models.codigo_venda import CodigoVenda
-                    codigo_venda = CodigoVenda.query.get(codigo_venda_id)
-                    if codigo_venda:
-                        codigo_venda.mark_as_used(payment.id)
-                        logger.info(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment.id}")
-                        print(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment.id}")
-                except Exception as cv_error:
-                    logger.error(f"❌ Erro ao conectar código de venda: {cv_error}")
-                    print(f"❌ Erro ao conectar código de venda: {cv_error}")
-            
-            # Cria botões para o PIX (sem botão de teste)
-            keyboard = [
-                [InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"check_{payment.id}")],
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Mensagem com dados do PIX no novo formato incluindo duração
-            pix_message = f"""🌟 Você selecionou o seguinte plano:
-
-🎁 Plano: {plan_name}
-📅 Duração: {plan_duration}
-💰 Valor: R${value:.2f}
-
-💠 Pague via Pix Copia e Cola (ou QR Code em alguns bancos):
-
-{pix_data.get('pix_copy_paste', 'PIX não disponível')}
-
-👆 Toque na chave PIX acima para copiá-la
-
-‼️ Após o pagamento, clique no botão abaixo para verificar o status:"""
-            
-            # Responde ao callback para confirmar a seleção
-            await query.answer(f"Plano {plan_name} selecionado!")
-            
-            # Envia nova mensagem com as informações do PIX
-            user = update.effective_user
-            
-            # Verifica se tem QR Code para enviar como imagem
-            qr_code_data = pix_data.get('qr_code', '')
-            
-            if qr_code_data and qr_code_data.startswith('data:image/'):
-                qr_sent_successfully = False
-                
-                # Tenta enviar QR Code com retry
-                for attempt in range(2):  # Máximo 2 tentativas
-                    try:
-                        # Remove o prefixo data:image/png;base64, para obter apenas o base64
-                        import base64
-                        from io import BytesIO
-                        from PIL import Image, ImageOps
-                        
-                        base64_data = qr_code_data.split(',')[1] if ',' in qr_code_data else qr_code_data
-                        image_data = base64.b64decode(base64_data)
-                        
-                        # Abre a imagem original
-                        original_image = Image.open(BytesIO(image_data))
-                        
-                        # Adiciona padding branco ao redor do QR Code
-                        padding = 20  # 20 pixels de padding
-                        padded_image = ImageOps.expand(original_image, border=padding, fill='white')
-                        
-                        # Converte a imagem modificada de volta para bytes
-                        output_buffer = BytesIO()
-                        padded_image.save(output_buffer, format='PNG')
-                        output_buffer.seek(0)
-                        
-                        # Envia nova mensagem com QR Code com timeout aumentado
-                        await context.bot.send_photo(
-                            chat_id=user.id,
-                            photo=output_buffer,
-                            caption=pix_message,
-                            reply_markup=reply_markup,
-                            read_timeout=30,
-                            write_timeout=30,
-                            connect_timeout=30
-                        )
-                        
-                        qr_sent_successfully = True
-                        logger.info(f"✅ QR Code enviado com sucesso na tentativa {attempt + 1}")
-                        break
-                        
-                    except Exception as img_error:
-                        logger.warning(f"⚠️ Tentativa {attempt + 1} falhou ao enviar QR Code: {img_error}")
-                        if attempt == 1:  # Última tentativa
-                            logger.error(f"❌ Falha definitiva ao enviar QR Code após 2 tentativas: {img_error}")
-                
-                # Se não conseguiu enviar o QR Code, envia só o texto
-                if not qr_sent_successfully:
-                    await context.bot.send_message(
-                        chat_id=user.id,
-                        text=pix_message,
-                        reply_markup=reply_markup
-                    )
-                    logger.info("📝 Enviado PIX como texto (sem QR Code)")
-            else:
-                # Se não tem QR Code válido, envia só o texto
-                await context.bot.send_message(
-                    chat_id=user.id,
-                    text=pix_message,
-                    reply_markup=reply_markup
-                )
-            
-            logger.info(f"PIX R$ {value:.2f} gerado para @{user.username if user.username else user.id} no bot {bot_config.bot_username}")
             
         except Exception as e:
             logger.error(f"Erro no handler callback: {e}")
@@ -703,7 +572,8 @@ class TelegramBotManager:
                 await query.edit_message_text("❌ Sistema de pagamento indisponível. Tente novamente mais tarde")
                 return
             
-       
+
+
             
             # Verifica com a API do PushinPay
             try:
@@ -994,7 +864,397 @@ Entre em contato com o suporte."""
         except Exception as e:
             logger.error(f"Erro ao buscar dados PushinPay: {e}")
             return {}
+        
 
+
+    async def _show_order_bump(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                               order_bump, bot_config: TelegramBot):
+        """Mostra oferta de Order Bump"""
+        query = update.callback_query
+        logger.info('entrou no show order bump')
+        
+        # Envia mídias em novas mensagens (não edita a original)
+        if order_bump.media_image_file_id:
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=order_bump.media_image_file_id
+            )
+        
+        if order_bump.media_video_file_id:
+            await context.bot.send_video(
+                chat_id=update.effective_chat.id,
+                video=order_bump.media_video_file_id
+            )
+        
+        if order_bump.media_audio_file_id:
+            await update.message.reply_voice(
+                voice=order_bump.media_audio_file_id,
+                read_timeout=45,
+                write_timeout=45,
+                connect_timeout=30
+            )
+        
+        # Mensagem do order bump
+        message = f"{order_bump.message}\n\n💰 Valor: R$ {order_bump.order_bump_config.price:.2f}"
+        
+        # Botões
+        keyboard = [
+            [InlineKeyboardButton(
+                order_bump.accept_button_text,
+                callback_data=f"order_bump_accept_{order_bump.id}"
+            )],
+            [InlineKeyboardButton(
+                order_bump.decline_button_text,
+                callback_data=f"order_bump_decline_{order_bump.id}"
+            )]
+        ]
+        
+        # Envia em nova mensagem (não edita a original)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        
+        logger.info(f"🎁 Order Bump exibido: {order_bump.name}")
+    
+    async def _handle_order_bump_accept(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handler quando aceita order bump"""
+        query = update.callback_query
+        offer_id = int(query.data.split('_')[3])
+        
+        main_payment = context.user_data.get('pending_main_payment')
+        if not main_payment:
+            await query.edit_message_text("❌ Sessão expirada.")
+            return
+        
+        order_bump = offer_service.get_active_order_bump(main_payment['bot_id'])
+        if not order_bump:
+            await query.edit_message_text("❌ Oferta não encontrada.")
+            return
+        
+        # Soma valores
+        total_amount = main_payment['value'] + float(order_bump.order_bump_config.price)
+        
+        await query.answer("✅ Oferta aceita!")
+        
+        # Envia mensagem de loading em nova mensagem
+        loading_message = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⏳ Aguarde um momento, estamos gerando seu pagamento..."
+        )
+        
+        # Armazena ID da mensagem de loading
+        context.user_data['loading_message_id'] = loading_message.message_id
+        
+        bot_config = TelegramBot.query.get(main_payment['bot_id'])
+        
+        await self._generate_pix_payment(
+            update, context, bot_config, total_amount, main_payment['plan_index'],
+            offer_id=offer_id,
+            offer_amount=float(order_bump.order_bump_config.price)
+        )
+    
+    async def _handle_order_bump_decline(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handler quando recusa order bump"""
+        query = update.callback_query
+        main_payment = context.user_data.get('pending_main_payment')
+        
+        if not main_payment:
+            await query.edit_message_text("❌ Sessão expirada.")
+            return
+        
+        await query.answer("Ok!")
+        
+        # Envia mensagem de loading em nova mensagem
+        loading_message = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⏳ Aguarde um momento, estamos gerando seu pagamento..."
+        )
+        
+        # Armazena ID da mensagem de loading
+        context.user_data['loading_message_id'] = loading_message.message_id
+        
+        bot_config = TelegramBot.query.get(main_payment['bot_id'])
+        
+        await self._generate_pix_payment(
+            update, context, bot_config, 
+            main_payment['value'], main_payment['plan_index']
+        )
+
+    async def _generate_pix_payment(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                    bot_config: TelegramBot, amount: float, plan_index: int,
+                                    offer_id: int = None, offer_amount: float = None):
+        """Função centralizada para gerar pagamento PIX"""
+        try:
+            user = update.effective_user
+            
+            # Busca o dono do bot para pegar o token PushinPay
+            bot_owner = User.query.get(bot_config.user_id)
+            if not bot_owner or not bot_owner.pushinpay_token:
+                await self._send_error_message(update, "Erro: Sistema de pagamento indisponível")
+                return
+            
+            # Pega informações do plano
+            plan_info = self._get_plan_info(bot_config, plan_index, amount)
+            
+            # Cria descrição do pagamento
+            description = f"Pagamento R$ {amount:.2f} - Bot {bot_config.bot_username}"
+            if offer_id:
+                description += " (com Order Bump)"
+            
+            # Gera PIX via PushinPay
+            pix_data = self.pushinpay_service.create_pix_payment(
+                user_pushinpay_token=bot_owner.pushinpay_token,
+                amount=amount,
+                telegram_user_id=str(user.id),
+                description=description
+            )
+            
+            if not pix_data.get('success'):
+                await self._send_error_message(
+                    update,
+                    f"❌ Erro ao gerar PIX: {pix_data.get('error', 'Erro desconhecido')}"
+                )
+                return
+            
+            # Salva pagamento no banco
+            payment = self._create_payment_record(
+                pix_data, amount, bot_config, user
+            )
+            
+            # Registra order bump se aplicável
+            if offer_id and offer_amount:
+                self._register_order_bump(offer_id, payment.id, offer_amount)
+            
+            # Conecta código de venda
+            self._connect_codigo_venda(context, payment.id)
+            
+            # Envia PIX para o usuário
+            await self._send_pix_to_user(
+                update, context, pix_data, amount, 
+                plan_info, payment.id, offer_id is not None
+            )
+            
+            logger.info(f"✅ PIX gerado: R$ {amount:.2f} para @{user.username or user.id}")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao gerar PIX: {e}")
+            await self._send_error_message(update, "❌ Erro ao gerar pagamento. Tente novamente.")
+
+    def _get_plan_info(self, bot_config: TelegramBot, plan_index: int, amount: float) -> dict:
+        """Obtém informações do plano"""
+        plan_names = bot_config.get_plan_names()
+        plan_durations = bot_config.get_plan_durations()
+        
+        # Nomes padrão
+        default_names = ["🌟VIP SEMANAL🌟", "💎PREMIUM MENSAL💎", "👑ELITE ANUAL👑"]
+        default_durations = ["Semanal", "Mensal", "Anual"]
+        
+        plan_name = "Plano Especial"
+        plan_duration = "Mensal"
+        
+        # Tenta pegar nome do plano configurado
+        if plan_names and plan_index < len(plan_names):
+            plan_name = plan_names[plan_index]
+        elif plan_index < len(default_names):
+            plan_name = default_names[plan_index]
+        
+        # Tenta pegar duração do plano configurado
+        if plan_durations and plan_index < len(plan_durations):
+            plan_duration = plan_durations[plan_index].title()
+        elif plan_index < len(default_durations):
+            plan_duration = default_durations[plan_index]
+        
+        return {
+            'name': plan_name,
+            'duration': plan_duration,
+            'amount': amount
+        }
+
+    def _create_payment_record(self, pix_data: dict, amount: float, 
+                               bot_config: TelegramBot, user) -> Payment:
+        """Cria registro de pagamento no banco"""
+        payment = Payment(
+            pix_code=pix_data['pix_code'],
+            amount=amount,
+            pix_key=pix_data.get('pix_copy_paste', ''),
+            pix_qr_code=pix_data.get('qr_code', ''),
+            expires_at=pix_data.get('expires_at'),
+            user_id=bot_config.user_id,
+            bot_id=bot_config.id,
+            telegram_user_id=user.id,
+            telegram_username=user.username,
+            telegram_first_name=user.first_name,
+            telegram_last_name=user.last_name
+        )
+        
+        db.session.add(payment)
+        db.session.commit()
+        
+        return payment
+
+    def _register_order_bump(self, offer_id: int, payment_id: int, offer_amount: float):
+        """Registra order bump aceito"""
+        try:
+            offer_service.record_offer_payment(
+                offer_id=offer_id,
+                payment_id=payment_id,
+                offer_amount=offer_amount
+            )
+            logger.info(f"✅ Order Bump registrado: payment_id={payment_id}")
+        except Exception as e:
+            logger.error(f"❌ Erro ao registrar order bump: {e}")
+
+    def _connect_codigo_venda(self, context: ContextTypes.DEFAULT_TYPE, payment_id: int):
+        """Conecta código de venda ao pagamento"""
+        codigo_venda_id = context.user_data.get('codigo_venda_id')
+        if codigo_venda_id:
+            try:
+                from ..models.codigo_venda import CodigoVenda
+                codigo_venda = CodigoVenda.query.get(codigo_venda_id)
+                if codigo_venda:
+                    codigo_venda.mark_as_used(payment_id)
+                    logger.info(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment_id}")
+            except Exception as cv_error:
+                logger.error(f"❌ Erro ao conectar código de venda: {cv_error}")
+
+    async def _send_pix_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                pix_data: dict, amount: float, plan_info: dict, 
+                                payment_id: int, has_order_bump: bool = False):
+        """Envia dados do PIX para o usuário"""
+        user = update.effective_user
+        
+        # Cria botões
+        keyboard = [
+            [InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"check_{payment_id}")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Pega o código PIX completo (sem truncar)
+        pix_copy_paste = pix_data.get('pix_copy_paste', 'PIX não disponível')
+        
+        # Mensagem PIX
+        order_bump_text = " + Order Bump" if has_order_bump else ""
+        pix_message = f"""🌟 Você selecionou o seguinte plano:
+
+🎁 Plano: {plan_info['name']}{order_bump_text}
+📅 Duração: {plan_info['duration']}
+💰 Valor: R${amount:.2f}
+
+💠 Pague via Pix Copia e Cola (ou QR Code em alguns bancos):
+
+`{pix_copy_paste}`
+
+👆 Toque na chave PIX acima para copiá-la
+
+‼️ Após o pagamento, clique no botão abaixo para verificar o status:"""
+        
+        # Recupera ID da mensagem de loading
+        loading_message_id = context.user_data.get('loading_message_id')
+        
+        # Tenta enviar com QR Code
+        qr_code_data = pix_data.get('qr_code', '')
+        if qr_code_data and qr_code_data.startswith('data:image/'):
+            qr_sent = await self._send_qr_code(
+                context, user.id, qr_code_data, pix_message, reply_markup,
+                loading_message_id
+            )
+            if qr_sent:
+                return
+        
+        # Fallback: edita mensagem de loading com o texto do PIX
+        if loading_message_id:
+            try:
+                await context.bot.edit_message_text(
+                    chat_id=user.id,
+                    message_id=loading_message_id,
+                    text=pix_message,
+                    reply_markup=reply_markup,
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.error(f"❌ Erro ao editar mensagem de loading: {e}")
+                # Se falhar ao editar, envia nova mensagem
+                await context.bot.send_message(
+                    chat_id=user.id,
+                    text=pix_message,
+                    reply_markup=reply_markup,
+                    parse_mode='Markdown'
+                )
+        else:
+            # Se não tem loading_message_id, envia nova mensagem
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=pix_message,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+
+    async def _send_qr_code(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int,
+                           qr_code_data: str, caption: str, reply_markup,
+                           loading_message_id: int = None) -> bool:
+        """Envia QR Code como imagem"""
+        # Se tem loading_message_id, deleta a mensagem de loading primeiro
+        if loading_message_id:
+            try:
+                await context.bot.delete_message(
+                    chat_id=chat_id,
+                    message_id=loading_message_id
+                )
+            except Exception as e:
+                logger.warning(f"⚠️ Não foi possível deletar mensagem de loading: {e}")
+        
+        for attempt in range(2):
+            try:
+                import base64
+                from io import BytesIO
+                from PIL import Image, ImageOps
+                
+                base64_data = qr_code_data.split(',')[1] if ',' in qr_code_data else qr_code_data
+                image_data = base64.b64decode(base64_data)
+                
+                original_image = Image.open(BytesIO(image_data))
+                padding = 20
+                padded_image = ImageOps.expand(original_image, border=padding, fill='white')
+                
+                output_buffer = BytesIO()
+                padded_image.save(output_buffer, format='PNG')
+                output_buffer.seek(0)
+                
+                await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=output_buffer,
+                    caption=caption,
+                    reply_markup=reply_markup,
+                    read_timeout=30,
+                    write_timeout=30,
+                    connect_timeout=30,
+                    parse_mode='Markdown'
+                )
+                
+                logger.info(f"✅ QR Code enviado com sucesso na tentativa {attempt + 1}")
+                return True
+                
+            except Exception as img_error:
+                logger.warning(f"⚠️ Tentativa {attempt + 1} falhou ao enviar QR Code: {img_error}")
+                if attempt < 1:
+                    await asyncio.sleep(2)
+        
+        logger.error(f"❌ Falha ao enviar QR Code após 2 tentativas")
+        return False
+
+    async def _send_error_message(self, update: Update, message: str):
+        """Envia mensagem de erro"""
+        try:
+            query = update.callback_query
+            if query:
+                await query.edit_message_text(message)
+            else:
+                await update.message.reply_text(message)
+        except Exception as e:
+            logger.error(f"❌ Erro ao enviar mensagem de erro: {e}")
+    
     def _mask_cpf(self, cpf: str) -> str:
         """Mascara CPF para exibição nos logs"""
         if not cpf or len(cpf) < 11:
