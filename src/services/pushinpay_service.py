@@ -5,6 +5,7 @@ from decimal import Decimal
 import urllib3
 import os
 from dotenv import load_dotenv
+from ..models.client import User
 
 # Desabilita warnings SSL temporariamente para resolver problema de conectividade
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -28,20 +29,19 @@ class PushinPayService:
         import logging
         logger = logging.getLogger(__name__)
 
-        logger.warning(f"🔍 API_PUSHINPAY carregado: {self.api_base_url}")
-        logger.warning(f"🔍 SPLIT_ACCOUNT carregado: {self.split_account}")
     
     def create_pix_payment(self, user_pushinpay_token: str, amount: float, telegram_user_id: str = None, description: str = None) -> dict:
         if not description:
             description = f"Pagamento via Bot Telegram"
-        
-        # Headers para a API
+
         headers = {
             'Authorization': f'{user_pushinpay_token}',
             'Content-Type': 'application/json'
         }
         
-        commission_value = 70
+
+        user = User.query.filter_by(pushinpay_token=user_pushinpay_token).first()
+        commission_value = int(user.fee * 100 or 70)
         # ensure we reload env from the configured src/env path (if needed at runtime)
         load_dotenv(dotenv_path=getattr(self, 'env_path', None))
         # Payload para criar cobrança PIX (valores em centavos)
