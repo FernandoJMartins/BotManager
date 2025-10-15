@@ -1143,7 +1143,7 @@ Entre em contato com o suporte."""
         
         # Pega o código PIX completo (sem truncar)
         pix_copy_paste = pix_data.get('pix_copy_paste', 'PIX não disponível')
-        
+
         # Mensagem PIX
         order_bump_text = " + Order Bump" if has_order_bump else ""
         pix_message = f"""🌟 Você selecionou o seguinte plano:
@@ -1154,7 +1154,7 @@ Entre em contato com o suporte."""
 
 💠 Pague via Pix Copia e Cola ou QR Code:
 
-`{pix_copy_paste}`
+<blockquote><code>{pix_copy_paste}</code></blockquote>
 
 👆 Toque na chave PIX acima para copiá-la
 
@@ -1181,7 +1181,7 @@ Entre em contato com o suporte."""
                     message_id=loading_message_id,
                     text=pix_message,
                     reply_markup=reply_markup,
-                    parse_mode='Markdown'
+                    parse_mode='HTML'
                 )
             except Exception as e:
                 logger.error(f"❌ Erro ao editar mensagem de loading: {e}")
@@ -1190,7 +1190,7 @@ Entre em contato com o suporte."""
                     chat_id=user.id,
                     text=pix_message,
                     reply_markup=reply_markup,
-                    parse_mode='Markdown'
+                    parse_mode='HTML'
                 )
         else:
             # Se não tem loading_message_id, envia nova mensagem
@@ -1198,7 +1198,7 @@ Entre em contato com o suporte."""
                 chat_id=user.id,
                 text=pix_message,
                 reply_markup=reply_markup,
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
 
     async def _send_qr_code(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int,
@@ -1240,7 +1240,7 @@ Entre em contato com o suporte."""
                     read_timeout=30,
                     write_timeout=30,
                     connect_timeout=30,
-                    parse_mode='Markdown'
+                    parse_mode='HTML'
                 )
                 
                 logger.info(f"✅ QR Code enviado com sucesso na tentativa {attempt + 1}")
