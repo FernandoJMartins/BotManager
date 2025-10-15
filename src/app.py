@@ -73,6 +73,7 @@ def create_app():
         from datetime import datetime, timedelta
         from sqlalchemy import func, and_
         from .models.bot import TelegramBot as Bot
+        from .models.codigo_venda import CodigoVenda as CodigoVenda
         from .models.client import User as Client
         from .models.payment import Payment
         
@@ -113,16 +114,17 @@ def create_app():
         
         # 1. Query base com todos os filtros aplicados
         user_bots_query = db.session.query(Bot).filter(and_(*bot_filter))
-        total_bots = user_bots_query.count()
-        
+
+        user_bot_ids = db.session.query(Bot.id).filter(and_(*bot_filter)).subquery()
+
         # 2. Iniciações (usando bots criados no período como proxy)
-        bots_in_period = db.session.query(func.count(Bot.id))\
-            .filter(and_(
-                *bot_filter,
-                func.date(Bot.created_at) >= start_date,
-                func.date(Bot.created_at) <= end_date
-            )).scalar() or 0
-        stats['bot_starts'] = max(bots_in_period, total_bots)  # Mínimo é o total de bots
+        starts_in_period = db.session.query(func.count(CodigoVenda.id))\
+            .filter(
+                CodigoVenda.bot_id.in_(user_bot_ids),
+                func.date(CodigoVenda.created_at) >= start_date,
+                func.date(CodigoVenda.created_at) <= end_date
+            ).scalar() or 0
+        stats['bot_starts'] = starts_in_period
         
         # 3. Pagamentos completados no período (representa "assinaturas")
         stats['subscriptions'] = db.session.query(func.count(Payment.id))\
