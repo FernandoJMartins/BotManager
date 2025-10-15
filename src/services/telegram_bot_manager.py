@@ -682,17 +682,13 @@ Entre em contato com o suporte."""
                 # Pagamento ainda pendente
                 await query.answer("Pagamento ainda pendente...")
                 
-                keyboard = [
-                    [InlineKeyboardButton("🔄 Verificar Novamente", callback_data=f"check_{payment_id}")],
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await query.edit_message_text(
-                    "⏳ Pagamento ainda não foi identificado.\n\n"
-                    "Aguarde alguns minutos após realizar o pagamento e tente novamente.",
-                    reply_markup=reply_markup
+                pending_msg = f""" ⏳ Pagamento ainda não foi confirmado. Por favor realize o pagamento e tente novamente mais tarde!"""
+
+                await context.bot.send_message(
+                    chat_id = user.id,
+                    text = pending_msg,
                 )
-                
+
         except Exception as e:
             logger.error(f"❌ Erro na verificação de pagamento: {e}")
             await query.edit_message_text("❌ Erro ao verificar pagamento. Tente novamente.")
