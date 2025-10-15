@@ -212,6 +212,7 @@ class TelegramBotManager:
                     logger.info(f"✅ Código de venda criado com ID: {codigo_venda.id}")
                 except Exception as utm_error:
                     logger.error(f"❌ Erro ao salvar código de venda: {utm_error}")
+                    db.session.rollback()
             
             # Mensagem de boas-vindas
             welcome_text = bot_config.welcome_message or "Olá! Bem-vindo ao meu bot!"
@@ -276,6 +277,11 @@ class TelegramBotManager:
             
         except Exception as e:
             logger.error(f"❌ Erro no handler /start: {e}")
+            # Rollback em caso de erro
+            try:
+                db.session.rollback()
+            except:
+                pass
             try:
                 await update.message.reply_text("Desculpe, ocorreu um erro. Tente novamente.")
             except:
@@ -894,8 +900,10 @@ Entre em contato com o suporte."""
                 connect_timeout=30
             )
         
-        # Mensagem do order bump
-        message = f"{order_bump.message}\n\n💰 Valor: R$ {order_bump.order_bump_config.price:.2f}"
+        # Mensagem do order bump com preço se disponível
+        message = f"{order_bump.message}"
+        if order_bump.order_bump_config and hasattr(order_bump.order_bump_config, 'price'):
+            message += f"\n\n💰 Valor: R$ {order_bump.order_bump_config.price:.2f}"
         
         # Botões
         keyboard = [
@@ -1040,6 +1048,11 @@ Entre em contato com o suporte."""
             
         except Exception as e:
             logger.error(f"❌ Erro ao gerar PIX: {e}")
+            # Rollback em caso de erro
+            try:
+                db.session.rollback()
+            except:
+                pass
             await self._send_error_message(update, "❌ Erro ao gerar pagamento. Tente novamente.")
 
     def _get_plan_info(self, bot_config: TelegramBot, plan_index: int, amount: float) -> dict:
@@ -1118,6 +1131,10 @@ Entre em contato com o suporte."""
                     logger.info(f"✅ Código de venda {codigo_venda_id} conectado ao pagamento {payment_id}")
             except Exception as cv_error:
                 logger.error(f"❌ Erro ao conectar código de venda: {cv_error}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
 
     async def _send_pix_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                 pix_data: dict, amount: float, plan_info: dict, 

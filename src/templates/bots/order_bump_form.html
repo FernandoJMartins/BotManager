@@ -1,0 +1,130 @@
+{% extends "base_dark.html" %}
+
+{% block title %}Order Bump - {{ bot.bot_username }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div class="page-header" style="margin-bottom: 30px;">
+        <h1 style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <i class="fas fa-gift" style="color: var(--purple);"></i> 
+            Configurar Order Bump
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 14px;">
+            Bot: @{{ bot.bot_username }}
+        </p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <!-- Informações Básicas -->
+        <div class="chart-card" style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
+                Informações Básicas
+            </h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
+                    Nome da Oferta *
+                </label>
+                <input type="text" 
+                       name="name" 
+                       class="form-control" 
+                       value="{{ order_bump.name if order_bump else '' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                <small style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-secondary);">
+                    Nome interno para identificar a oferta
+                </small>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
+                    Preço (R$) *
+                </label>
+                <input type="number" 
+                       name="price" 
+                       class="form-control" 
+                       step="0.01" 
+                       min="0"
+                       value="{{ order_bump.order_bump_config.price if order_bump and order_bump.order_bump_config else '' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
+                    Mensagem da Oferta *
+                </label>
+                <textarea name="message" 
+                          class="form-control" 
+                          rows="5"
+                          required
+                          style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical; min-height: 100px;">{{ order_bump.message if order_bump else '' }}</textarea>
+                <small style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-secondary);">
+                    Mensagem que será exibida ao cliente
+                </small>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="chart-card" style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
+                Botões
+            </h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
+                    Texto do Botão de Aceitar *
+                </label>
+                <input type="text" 
+                       name="accept_button_text" 
+                       class="form-control"
+                       value="{{ order_bump.accept_button_text if order_bump else 'SIM! Quero essa oferta' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
+                    Texto do Botão de Recusar *
+                </label>
+                <input type="text" 
+                       name="decline_button_text" 
+                       class="form-control"
+                       value="{{ order_bump.decline_button_text if order_bump else 'Não, obrigado' }}"
+                       required
+                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="chart-card" style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
+                Status
+            </h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" 
+                           name="is_active"
+                           {{ 'checked' if order_bump and order_bump.is_active else '' }}
+                           style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+                    <span style="font-weight: 600; color: var(--text-primary);">Ativar Order Bump</span>
+                </label>
+                <small style="display: block; margin-top: 6px; margin-left: 30px; font-size: 12px; color: var(--text-secondary);">
+                    Quando ativo, a oferta será exibida após seleção de plano
+                </small>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Salvar Order Bump
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

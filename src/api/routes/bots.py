@@ -11,6 +11,9 @@ from ...services.telegram_media_service import TelegramMediaService, run_async_m
 from ...utils.logger import logger
 from ...utils.validators import TelegramValidationService
 
+from ...services.offer_service import offer_service
+from ...models.offer import Offer, OrderBumpConfig
+
 bots_bp = Blueprint('bots', __name__, url_prefix='/bots')
 
 # Configurações de upload
@@ -948,3 +951,98 @@ def edit_bot(slug):
             db.session.rollback()
     
     return render_template('bots/edit.html', bot=bot)
+
+@bots_bp.route('/<int:bot_id>/order-bump', methods=['GET'])
+@login_required
+def order_bump_form(bot_id):
+    """Exibe formulário de configuração de Order Bump"""
+    try:
+        bot = TelegramBot.query.get_or_404(bot_id)
+        
+        # Verifica se o bot pertence ao usuário
+        if bot.user_id != current_user.id:
+            flash('Acesso negado', 'error')
+            return redirect(url_for('bots.list_bots'))
+        
+
+        active_order_bump = offer_service.get_active_order_bump(bot_id)
+        
+        return render_template('bots/order_bump_form.html', 
+                             bot=bot, 
+                             order_bump=active_order_bump)
+    except Exception as e:
+        logger.error(f"Erro ao carregar formulário de order bump: {e}")
+        flash('Erro ao carregar formulário', 'error')
+        return redirect(url_for('bots.list_bots'))
+
+@bots_bp.route('/<int:bot_id>/order-bump', methods=['POST'])
+@login_required
+def save_order_bump(bot_id):
+    """Salva configuração de Order Bump"""
+    try:
+        bot = TelegramBot.query.get_or_404(bot_id)
+        
+        # Verifica se o bot pertence ao usuário
+        if bot.user_id != current_user.id:
+            flash('Acesso negado', 'error')
+            return redirect(url_for('bots.list_bots'))
+        
+        # Busca ou cria offer primeiro
+        offer = Offer.query.filter_by(
+            bot_id=bot_id,
+            offer_type='order_bump'
+        ).first()
+        
+        if not offer:
+            # Cria nova offer
+            offer = Offer(
+                bot_id=bot_id,
+                offer_type='order_bump',
+                name=request.form.get('name', 'Order Bump'),
+                message=request.form.get('message', ''),
+                accept_button_text=request.form.get('accept_button_text', 'SIM! Quero essa oferta'),
+                decline_button_text=request.form.get('decline_button_text', 'Não, obrigado'),
+                is_active=request.form.get('is_active') == 'on'
+            )
+            db.session.add(offer)
+            db.session.flush()  # Para obter offer.id
+            
+            # Agora cria o config vinculado à offer
+            order_bump_config = OrderBumpConfig(
+                offer_id=offer.id,
+                price=float(request.form.get('price', 0))
+            )
+            db.session.add(order_bump_config)
+        else:
+            # Atualiza offer existente
+            offer.name = request.form.get('name', 'Order Bump')
+            offer.message = request.form.get('message', '')
+            offer.accept_button_text = request.form.get('accept_button_text', 'SIM! Quero essa oferta')
+            offer.decline_button_text = request.form.get('decline_button_text', 'Não, obrigado')
+            offer.is_active = request.form.get('is_active') == 'on'
+            
+            # Atualiza ou cria config
+            if not offer.order_bump_config:
+                order_bump_config = OrderBumpConfig(
+                    offer_id=offer.id,
+                    price=float(request.form.get('price', 0))
+                )
+                db.session.add(order_bump_config)
+            else:
+                offer.order_bump_config.price = float(request.form.get('price', 0))
+        
+        db.session.commit()
+        
+        flash('Order Bump configurado com sucesso!', 'success')
+        return redirect(url_for('bots.list_bots'))
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao salvar order bump: {e}")
+        flash('Erro ao salvar configuração', 'error')
+        return redirect(url_for('bots.order_bump_form', bot_id=bot_id))
+
+# @bots_bp.route('/<int:bot_id>/start', methods=['POST'])
+# @login_required
+# def start_bot(bot_id):
+#     # ...existing code...
