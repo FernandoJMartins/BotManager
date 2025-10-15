@@ -877,7 +877,6 @@ Entre em contato com o suporte."""
                                order_bump, bot_config: TelegramBot):
         """Mostra oferta de Order Bump"""
         query = update.callback_query
-        logger.info('entrou no show order bump')
         
         # Envia mídias em novas mensagens (não edita a original)
         if order_bump.media_image_file_id:
@@ -900,10 +899,8 @@ Entre em contato com o suporte."""
                 connect_timeout=30
             )
         
-        # Mensagem do order bump com preço se disponível
+        # Mensagem do order bump
         message = f"{order_bump.message}"
-        if order_bump.order_bump_config and hasattr(order_bump.order_bump_config, 'price'):
-            message += f"\n\n💰 Valor: R$ {order_bump.order_bump_config.price:.2f}"
         
         # Botões
         keyboard = [
@@ -924,7 +921,6 @@ Entre em contato com o suporte."""
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         
-        logger.info(f"🎁 Order Bump exibido: {order_bump.name}")
     
     async def _handle_order_bump_accept(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handler quando aceita order bump"""
@@ -1159,7 +1155,7 @@ Entre em contato com o suporte."""
 📅 Duração: {plan_info['duration']}
 💰 Valor: R${amount:.2f}
 
-💠 Pague via Pix Copia e Cola (ou QR Code em alguns bancos):
+💠 Pague via Pix Copia e Cola ou QR Code:
 
 `{pix_copy_paste}`
 

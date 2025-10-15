@@ -1,130 +1,618 @@
-{% extends "base_dark.html" %}
-
-{% block title %}Order Bump - {{ bot.bot_username }}{% endblock %}
+{% extends "base_dark.html" %} 
+{% block title %}Order Bump - {{ bot.bot_username }}{% endblock %} 
 
 {% block content %}
-<div class="container" style="max-width: 900px; margin: 0 auto; padding: 20px;">
-    <div class="page-header" style="margin-bottom: 30px;">
-        <h1 style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-            <i class="fas fa-gift" style="color: var(--purple);"></i> 
-            Configurar Order Bump
-        </h1>
-        <p style="color: var(--text-secondary); font-size: 14px;">
-            Bot: @{{ bot.bot_username }}
-        </p>
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 20px">
+  <div class="page-header" style="margin-bottom: 30px">
+    <h1 style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px">
+      <i class="fas fa-gift" style="color: var(--purple)"></i>
+      Configurar Order Bump
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 14px">
+      Bot: {{ bot.bot_username }}
+    </p>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+    <!-- Informações Básicas -->
+    <div class="chart-card" style="margin-bottom: 24px">
+      <h3 class="section-title">
+        <i class="fas fa-info-circle me-2"></i>
+        Informações Básicas
+      </h3>
+
+      <div class="form-group">
+        <label class="form-label">Nome da Oferta *</label>
+        <input
+          type="text"
+          name="name"
+          class="form-control"
+          value="{{ order_bump.name if order_bump else '' }}"
+          required
+          placeholder="Ex: Bônus Exclusivo VIP"
+        />
+        <small class="form-hint">Nome interno para identificar a oferta</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Preço (R$) *</label>
+        <input
+          type="number"
+          name="price"
+          class="form-control"
+          step="0.01"
+          min="0"
+          value="{{ order_bump.order_bump_config.price if order_bump and order_bump.order_bump_config else '' }}"
+          required
+          placeholder="Ex: 19.90"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mensagem da Oferta *</label>
+        <textarea
+          name="message"
+          class="form-control"
+          rows="5"
+          required
+          placeholder="🎁 OFERTA ESPECIAL!&#10;&#10;Ganhe acesso ao conteúdo bônus por apenas R$ 19,90!"
+        >{{ order_bump.message if order_bump else '' }}</textarea>
+        <small class="form-hint">Mensagem que será exibida ao cliente quando a oferta aparecer</small>
+      </div>
     </div>
 
-    <form method="POST" enctype="multipart/form-data">
-        <!-- Informações Básicas -->
-        <div class="chart-card" style="margin-bottom: 24px;">
-            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
-                Informações Básicas
-            </h3>
-            
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
-                    Nome da Oferta *
-                </label>
-                <input type="text" 
-                       name="name" 
-                       class="form-control" 
-                       value="{{ order_bump.name if order_bump else '' }}"
-                       required
-                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
-                <small style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-secondary);">
-                    Nome interno para identificar a oferta
-                </small>
-            </div>
+    <!-- Mídias da Oferta -->
+    <div class="chart-card" style="margin-bottom: 24px">
+      <h3 class="section-title">
+        <i class="fas fa-photo-video me-2"></i>
+        Mídias da Oferta
+        <small style="font-weight: normal; font-size: 0.85rem; margin-left: 0.5rem; color: var(--text-secondary);">(opcional)</small>
+      </h3>
 
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
-                    Preço (R$) *
-                </label>
-                <input type="number" 
-                       name="price" 
-                       class="form-control" 
-                       step="0.01" 
-                       min="0"
-                       value="{{ order_bump.order_bump_config.price if order_bump and order_bump.order_bump_config else '' }}"
-                       required
-                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
-                    Mensagem da Oferta *
-                </label>
-                <textarea name="message" 
-                          class="form-control" 
-                          rows="5"
-                          required
-                          style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical; min-height: 100px;">{{ order_bump.message if order_bump else '' }}</textarea>
-                <small style="display: block; margin-top: 6px; font-size: 12px; color: var(--text-secondary);">
-                    Mensagem que será exibida ao cliente
-                </small>
-            </div>
+      <div class="media-grid">
+        <!-- Mídia da Oferta (Imagem/Vídeo) -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-image me-2"></i>
+            Imagem/Vídeo da Oferta
+          </label>
+          
+          <div class="file-input-wrapper">
+            <input
+              type="file"
+              class="form-file"
+              id="offer_media_image"
+              name="offer_media_image"
+              accept="image/*,video/mp4,video/avi,video/mov,video/mkv,video/webm"
+              onchange="handleMediaUpload(this, 'offerMediaPreview')"
+            />
+            <label for="offer_media_image" class="file-label">
+              <i class="fas fa-cloud-upload-alt me-2"></i>
+              <span class="upload-text">Escolher Mídia</span>
+              <span class="upload-limit">(Máx: 50MB)</span>
+            </label>
+          </div>
+          
+          <div id="offerMediaPreview" class="media-preview" style="display: none;"></div>
+          
+          <small class="form-hint">
+            Imagem ou vídeo que será exibido junto com a oferta
+          </small>
         </div>
 
-        <!-- Botões -->
-        <div class="chart-card" style="margin-bottom: 24px;">
-            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
-                Botões
-            </h3>
-            
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
-                    Texto do Botão de Aceitar *
-                </label>
-                <input type="text" 
-                       name="accept_button_text" 
-                       class="form-control"
-                       value="{{ order_bump.accept_button_text if order_bump else 'SIM! Quero essa oferta' }}"
-                       required
-                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">
-                    Texto do Botão de Recusar *
-                </label>
-                <input type="text" 
-                       name="decline_button_text" 
-                       class="form-control"
-                       value="{{ order_bump.decline_button_text if order_bump else 'Não, obrigado' }}"
-                       required
-                       style="width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
-            </div>
+        <!-- Áudio da Oferta -->
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-volume-up me-2"></i>
+            Áudio da Oferta
+          </label>
+          
+          <div class="file-input-wrapper">
+            <input
+              type="file"
+              class="form-file"
+              id="offer_media_audio"
+              name="offer_media_audio"
+              accept="audio/ogg"
+              onchange="handleAudioUpload(this, 'offerAudioPreview')"
+            />
+            <label for="offer_media_audio" class="file-label">
+              <i class="fas fa-cloud-upload-alt me-2"></i>
+              <span class="upload-text">Escolher Áudio</span>
+              <span class="upload-limit">(Máx: 25MB)</span>
+            </label>
+          </div>
+          
+          <div id="offerAudioPreview" class="media-preview" style="display: none;"></div>
+          
+          <small class="form-hint">Áudio que será enviado junto com a oferta (formato OGG)</small>
         </div>
+      </div>
+    </div>
 
-        <!-- Status -->
-        <div class="chart-card" style="margin-bottom: 24px;">
-            <h3 style="margin-bottom: 20px; color: var(--text-primary); font-size: 18px; border-bottom: 2px solid var(--purple); padding-bottom: 10px;">
-                Status
-            </h3>
-            
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" 
-                           name="is_active"
-                           {{ 'checked' if order_bump and order_bump.is_active else '' }}
-                           style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
-                    <span style="font-weight: 600; color: var(--text-primary);">Ativar Order Bump</span>
-                </label>
-                <small style="display: block; margin-top: 6px; margin-left: 30px; font-size: 12px; color: var(--text-secondary);">
-                    Quando ativo, a oferta será exibida após seleção de plano
-                </small>
-            </div>
-        </div>
+    <!-- Entregável (O que o cliente recebe após pagar) -->
+    <div class="chart-card" style="margin-bottom: 24px">
+      <h3 class="section-title">
+        <i class="fas fa-gift me-2"></i>
+        Entregável
+        <small style="font-weight: normal; font-size: 0.85rem; margin-left: 0.5rem; color: var(--text-secondary);">(O que o cliente recebe)</small>
+      </h3>
 
-        <!-- Ações -->
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-            <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </a>
-            <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i> Salvar Order Bump
-            </button>
-        </div>
-    </form>
+      <div class="form-group">
+        <label class="form-label">Mensagem do Entregável</label>
+        <textarea
+          name="deliverable_message"
+          class="form-control"
+          rows="5"
+          placeholder="🎉 Parabéns! Aqui está seu bônus exclusivo:&#10;&#10;📌 Link de acesso: https://t.me/+abcdEFG12345&#10;📌 Material complementar: [link]&#10;&#10;Aproveite!"
+        >{{ order_bump.deliverable_message if order_bump else '' }}</textarea>
+        <small class="form-hint">
+          Mensagem que será enviada ao cliente após confirmar o pagamento do Order Bump
+        </small>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="chart-card" style="margin-bottom: 24px">
+      <h3 class="section-title">
+        <i class="fas fa-mouse-pointer me-2"></i>
+        Botões
+      </h3>
+
+      <div class="form-group">
+        <label class="form-label">Texto do Botão de Aceitar *</label>
+        <input
+          type="text"
+          name="accept_button_text"
+          class="form-control"
+          value="{{ order_bump.accept_button_text if order_bump else 'SIM! Quero essa oferta ✅' }}"
+          required
+          placeholder="SIM! Quero essa oferta ✅"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Texto do Botão de Recusar *</label>
+        <input
+          type="text"
+          name="decline_button_text"
+          class="form-control"
+          value="{{ order_bump.decline_button_text if order_bump else 'Não, obrigado ❌' }}"
+          required
+          placeholder="Não, obrigado ❌"
+        />
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="chart-card" style="margin-bottom: 24px">
+      <h3 class="section-title">
+        <i class="fas fa-toggle-on me-2"></i>
+        Status
+      </h3>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input 
+            type="checkbox" 
+            name="is_active" 
+            {{ 'checked' if order_bump and order_bump.is_active else '' }}
+          />
+          <span>Ativar Order Bump</span>
+        </label>
+        <small class="form-hint" style="margin-left: 30px;">
+          Quando ativo, a oferta será exibida após seleção de plano
+        </small>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="form-actions">
+      <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+      </a>
+      <button type="submit" class="btn-primary">
+        <i class="fas fa-save"></i> Salvar Order Bump
+      </button>
+    </div>
+  </form>
 </div>
+
+<script>
+// Função para lidar com upload de mídia
+function handleMediaUpload(input, previewId) {
+  const file = input.files[0];
+  const previewContainer = document.getElementById(previewId);
+  const fileLabel = input.nextElementSibling;
+  const uploadText = fileLabel.querySelector('.upload-text');
+  const uploadLimit = fileLabel.querySelector('.upload-limit');
+  
+  if (file) {
+    // Validar formato
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 
+      'video/webm', 'video/x-matroska'
+    ];
+    
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      alert('Formato não suportado! Use: JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM');
+      input.value = '';
+      return;
+    }
+    
+    // Validar tamanho
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
+    
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / 1024 / 1024;
+      const fileSizeMB = file.size / 1024 / 1024;
+      alert(`Arquivo muito grande! Tamanho: ${fileSizeMB.toFixed(1)}MB, Máximo: ${maxSizeMB}MB`);
+      input.value = '';
+      return;
+    }
+    
+    // Atualizar visual
+    uploadText.textContent = file.name;
+    uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+    fileLabel.classList.add('file-selected');
+    
+    // Preview
+    previewContainer.style.display = 'block';
+    const isImage = file.type.startsWith('image/');
+    
+    let previewHTML = `
+      <div class="file-info">
+        <div class="file-icon">
+          <i class="fas fa-${isImage ? 'image' : isVideo ? 'video' : 'file'}"></i>
+        </div>
+        <div class="file-details">
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${formatFileSize(file.size)}</span>
+        </div>
+        <button type="button" class="remove-file-btn" onclick="clearSelection('${input.id}', '${previewId}')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+    
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewHTML += `<img src="${e.target.result}" class="media-preview-img">`;
+        previewContainer.innerHTML = previewHTML;
+      };
+      reader.readAsDataURL(file);
+    } else if (isVideo) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewHTML += `<video controls class="media-preview-video"><source src="${e.target.result}" type="${file.type}"></video>`;
+        previewContainer.innerHTML = previewHTML;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewContainer.innerHTML = previewHTML;
+    }
+  }
+}
+
+// Função para áudio
+function handleAudioUpload(input, previewId) {
+  const file = input.files[0];
+  const previewContainer = document.getElementById(previewId);
+  const fileLabel = input.nextElementSibling;
+  const uploadText = fileLabel.querySelector('.upload-text');
+  const uploadLimit = fileLabel.querySelector('.upload-limit');
+  
+  if (file) {
+    const allowedAudioTypes = ['audio/ogg', 'audio/opus', 'application/ogg'];
+    
+    if (!allowedAudioTypes.includes(file.type.toLowerCase()) && !file.name.toLowerCase().endsWith('.ogg')) {
+      alert('Formato não suportado! Use apenas arquivos OGG.');
+      input.value = '';
+      return;
+    }
+    
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Áudio muito grande! Máximo: 20MB`);
+      input.value = '';
+      return;
+    }
+    
+    uploadText.textContent = file.name;
+    uploadLimit.textContent = `(${formatFileSize(file.size)})`;
+    fileLabel.classList.add('file-selected');
+    
+    previewContainer.style.display = 'block';
+    previewContainer.innerHTML = `
+      <div class="file-info">
+        <div class="file-icon"><i class="fas fa-music"></i></div>
+        <div class="file-details">
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${formatFileSize(file.size)}</span>
+        </div>
+        <button type="button" class="remove-file-btn" onclick="clearSelection('${input.id}', '${previewId}')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <audio controls class="audio-preview"><source src="${URL.createObjectURL(file)}" type="${file.type}"></audio>
+    `;
+  }
+}
+
+// Limpar seleção
+function clearSelection(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const previewContainer = document.getElementById(previewId);
+  const fileLabel = input.nextElementSibling;
+  const uploadText = fileLabel.querySelector('.upload-text');
+  const uploadLimit = fileLabel.querySelector('.upload-limit');
+  
+  input.value = '';
+  previewContainer.style.display = 'none';
+  previewContainer.innerHTML = '';
+  uploadText.textContent = inputId.includes('audio') ? 'Escolher Áudio' : 'Escolher Mídia';
+  uploadLimit.textContent = inputId.includes('audio') ? '(Máx: 25MB)' : '(Máx: 50MB)';
+  fileLabel.classList.remove('file-selected');
+}
+
+// Formatar tamanho
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+
+<style>
+.chart-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.section-title {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--purple);
+  display: flex;
+  align-items: center;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.file-input-wrapper {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.form-file {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-label:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.file-label.file-selected {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: var(--purple);
+  color: var(--purple);
+}
+
+.media-preview {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--purple);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.file-details {
+  flex: 1;
+}
+
+.file-name {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.file-size {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.remove-file-btn {
+  width: 28px;
+  height: 28px;
+  background: #ef4444;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-file-btn:hover {
+  background: #dc2626;
+}
+
+.media-preview-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.media-preview-video {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.audio-preview {
+  width: 100%;
+  height: 40px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-primary, .btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: var(--purple);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--purple-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: var(--secondary-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .media-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+}
+</style>
+
 {% endblock %}

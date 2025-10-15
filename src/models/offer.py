@@ -9,6 +9,7 @@ class Offer(db.Model):
     offer_type = db.Column(db.String(20), nullable=False)  # 'order_bump', 'downsell', 'mailing'
     name = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
+    deliverable_message = db.Column(db.Text, nullable=True)
     
     # Mídias (File IDs do Telegram)
     media_image_file_id = db.Column(db.String(255), nullable=True)
@@ -23,11 +24,11 @@ class Offer(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relacionamentos
+    # Relacionamentos - REMOVIDO back_populates que causava conflito
     bot = db.relationship('TelegramBot', backref='offers')
-    order_bump_config = db.relationship('OrderBumpConfig', back_populates='offer', uselist=False, cascade='all, delete-orphan')
-    downsell_config = db.relationship('DownsellConfig', back_populates='offer', uselist=False, cascade='all, delete-orphan')
-    mailing_config = db.relationship('MailingConfig', back_populates='offer', uselist=False, cascade='all, delete-orphan')
+    order_bump_config = db.relationship('OrderBumpConfig', uselist=False, cascade='all, delete-orphan')
+    downsell_config = db.relationship('DownsellConfig', uselist=False, cascade='all, delete-orphan')
+    mailing_config = db.relationship('MailingConfig', uselist=False, cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Offer {self.name} ({self.offer_type})>'
@@ -40,7 +41,8 @@ class OrderBumpConfig(db.Model):
     offer_id = db.Column(db.Integer, db.ForeignKey('offers.id', ondelete='CASCADE'), nullable=False, unique=True)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     
-    offer = db.relationship('Offer', back_populates='order_bump_config')
+    # REMOVIDO back_populates que causava conflito
+    offer = db.relationship('Offer')
 
 
 class DownsellConfig(db.Model):
@@ -51,7 +53,8 @@ class DownsellConfig(db.Model):
     discount_percentage = db.Column(db.Numeric(5, 2), nullable=False)
     delay_minutes = db.Column(db.JSON, nullable=False)  # [15, 30, 60]
     
-    offer = db.relationship('Offer', back_populates='downsell_config')
+    # REMOVIDO back_populates que causava conflito
+    offer = db.relationship('Offer')
 
 
 class MailingConfig(db.Model):
@@ -62,7 +65,8 @@ class MailingConfig(db.Model):
     price = db.Column(db.Numeric(10, 2), nullable=False)
     target_audience = db.Column(db.String(50), nullable=False)  # 'all', 'interacted', 'unpaid'
     
-    offer = db.relationship('Offer', back_populates='mailing_config')
+    # REMOVIDO back_populates que causava conflito
+    offer = db.relationship('Offer')
 
 
 class OfferPayment(db.Model):

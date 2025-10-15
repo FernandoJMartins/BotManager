@@ -1000,6 +1000,7 @@ def save_order_bump(bot_id):
                 offer_type='order_bump',
                 name=request.form.get('name', 'Order Bump'),
                 message=request.form.get('message', ''),
+                deliverable_message=request.form.get('deliverable_message', ''),
                 accept_button_text=request.form.get('accept_button_text', 'SIM! Quero essa oferta'),
                 decline_button_text=request.form.get('decline_button_text', 'Não, obrigado'),
                 is_active=request.form.get('is_active') == 'on'
@@ -1017,6 +1018,7 @@ def save_order_bump(bot_id):
             # Atualiza offer existente
             offer.name = request.form.get('name', 'Order Bump')
             offer.message = request.form.get('message', '')
+            offer.deliverable_message = request.form.get('deliverable_message', '')
             offer.accept_button_text = request.form.get('accept_button_text', 'SIM! Quero essa oferta')
             offer.decline_button_text = request.form.get('decline_button_text', 'Não, obrigado')
             offer.is_active = request.form.get('is_active') == 'on'
@@ -1030,6 +1032,110 @@ def save_order_bump(bot_id):
                 db.session.add(order_bump_config)
             else:
                 offer.order_bump_config.price = float(request.form.get('price', 0))
+        
+        # Processa upload de mídias da oferta (para exibição)
+        if 'offer_media_image' in request.files:
+            file = request.files['offer_media_image']
+            if file and file.filename and allowed_file(file.filename):
+                try:
+                    # RESET DO FILE POINTER - CRÍTICO
+                    file.seek(0)
+                    logger.info(f"🖼️ Processando mídia de oferta: {file.filename}")
+                    
+                    media_service = TelegramMediaService(bot.bot_token)
+                    validation = media_service.validate_media_file(file)
+                    
+                    if validation['valid'] and validation['media_type'] in ['photo', 'video']:
+                        # RESET NOVAMENTE antes de criar temp file
+                        file.seek(0)
+                        
+                        temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot_id}_ob_media_")
+                        
+                        try:
+                            if bot.id_logs:
+                                # Delay para evitar rate limiting
+                                import time
+                                time.sleep(1)
+                                
+                                file_id = run_async_media_upload(
+                                    bot.bot_token, 
+                                    temp_path, 
+                                    bot.id_logs, 
+                                    bot_id, 
+                                    validation['media_type']
+                                )
+                                
+                                if file_id:
+                                    if validation['media_type'] == 'video':
+                                        offer.media_video_file_id = file_id
+                                        offer.media_image_file_id = None
+                                        logger.info(f"✅ Vídeo de oferta salvo: {file_id}")
+                                    else:
+                                        offer.media_image_file_id = file_id
+                                        offer.media_video_file_id = None
+                                        logger.info(f"✅ Imagem de oferta salva: {file_id}")
+                                else:
+                                    logger.error("❌ Upload retornou file_id vazio")
+                            else:
+                                logger.warning("⚠️ Sem grupo de logs configurado")
+                        finally:
+                            media_service.cleanup_temp_file(temp_path)
+                    else:
+                        logger.error(f"❌ Mídia inválida: {validation.get('error')}")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao processar mídia da oferta: {e}")
+        
+        if 'offer_media_audio' in request.files:
+            file = request.files['offer_media_audio']
+            if file and file.filename and allowed_file(file.filename):
+                try:
+                    # RESET DO FILE POINTER
+                    file.seek(0)
+                    logger.info(f"🎵 Processando áudio de oferta: {file.filename}")
+                    
+                    media_service = TelegramMediaService(bot.bot_token)
+                    
+                    # Validação específica para OGG
+                    if file.filename.lower().endswith('.ogg'):
+                        validation = validate_ogg_audio_file(file)
+                    else:
+                        validation = media_service.validate_media_file(file)
+                    
+                    if validation['valid'] and validation['media_type'] == 'audio':
+                        # RESET NOVAMENTE
+                        file.seek(0)
+                        
+                        temp_path = media_service.create_temp_file(file, prefix=f"bot_{bot_id}_ob_audio_")
+                        
+                        try:
+                            if bot.id_logs:
+                                # Delay para evitar rate limiting
+                                import time
+                                time.sleep(2)
+                                
+                                media_type = 'voice' if file.filename.lower().endswith('.ogg') else 'audio'
+                                
+                                file_id = run_async_media_upload(
+                                    bot.bot_token, 
+                                    temp_path, 
+                                    bot.id_logs, 
+                                    bot_id, 
+                                    media_type
+                                )
+                                
+                                if file_id:
+                                    offer.media_audio_file_id = file_id
+                                    logger.info(f"✅ Áudio de oferta salvo: {file_id}")
+                                else:
+                                    logger.error("❌ Upload de áudio retornou file_id vazio")
+                            else:
+                                logger.warning("⚠️ Sem grupo de logs configurado")
+                        finally:
+                            media_service.cleanup_temp_file(temp_path)
+                    else:
+                        logger.error(f"❌ Áudio inválido: {validation.get('error')}")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao processar áudio da oferta: {e}")
         
         db.session.commit()
         
