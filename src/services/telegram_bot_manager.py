@@ -904,13 +904,14 @@ Entre em contato com o suporte."""
         
         # Botões
         keyboard = [
-            [InlineKeyboardButton(
-                order_bump.accept_button_text,
-                callback_data=f"order_bump_accept_{order_bump.id}"
-            )],
-            [InlineKeyboardButton(
+            [
+            InlineKeyboardButton(
                 order_bump.decline_button_text,
                 callback_data=f"order_bump_decline_{order_bump.id}"
+            ),
+            InlineKeyboardButton(
+                order_bump.accept_button_text,
+                callback_data=f"order_bump_accept_{order_bump.id}"
             )]
         ]
         
