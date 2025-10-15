@@ -1,251 +1,243 @@
 {% extends "base_dark.html" %} {% block title %}Order Bump - {{ bot.bot_username
 }}{% endblock %} {% block content %}
-<div class="container" style="max-width: 900px; margin: 0 auto; padding: 20px">
-  <div class="page-header" style="margin-bottom: 30px">
-    <h1
-      style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px"
-    >
+<header
+  class="dashboard-header"
+>
+  <div class="header-left" >
+    <h1>
       <i class="fas fa-gift" style="color: var(--purple)"></i>
       Configurar Order Bump
     </h1>
-    <p style="color: var(--text-secondary); font-size: 14px">
+    <p style="color: var(--text-secondary)">
       Bot: {{ bot.bot_username }}
     </p>
   </div>
+</header>
 
-  <form method="POST" enctype="multipart/form-data">
-    <!-- Informações Básicas -->
-    <div class="chart-card" style="margin-bottom: 24px">
-      <h3 class="section-title">
-        <i class="fas fa-info-circle me-2"></i>
-        Informações Básicas
-      </h3>
+  <div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+      <!-- Informações Básicas -->
+      <div class="chart-card" style="margin-bottom: 24px">
+        <h3 class="section-title">
+          <i class="fas fa-info-circle me-2"></i>
+          Informações Básicas
+        </h3>
 
-      <div class="form-group">
-        <label class="form-label">Nome da Oferta *</label>
-        <input
-          type="text"
-          name="name"
-          class="form-control"
-          value="{{ order_bump.name if order_bump else '' }}"
-          required
-          placeholder="Ex: Bônus Exclusivo VIP"
-        />
-        <small class="form-hint">Nome interno para identificar a oferta</small>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Preço (R$) *</label>
-        <input
-          type="number"
-          name="price"
-          class="form-control"
-          step="0.01"
-          min="0"
-          value="{{ order_bump.order_bump_config.price if order_bump and order_bump.order_bump_config else '' }}"
-          required
-          placeholder="Ex: 19.90"
-        />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Mensagem da Oferta *</label>
-        <textarea
-          name="message"
-          class="form-control"
-          rows="5"
-          required
-          placeholder="🎁 OFERTA ESPECIAL!&#10;&#10;Ganhe acesso ao conteúdo bônus por apenas R$ 19,90!"
-        >
-{{ order_bump.message if order_bump else '' }}</textarea
-        >
-        <small class="form-hint"
-          >Mensagem que será exibida ao cliente quando a oferta aparecer</small
-        >
-      </div>
-    </div>
-
-    <!-- Mídias da Oferta -->
-    <div class="chart-card" style="margin-bottom: 24px">
-      <h3 class="section-title">
-        <i class="fas fa-photo-video me-2"></i>
-        Mídias da Oferta
-        <small
-          style="
-            font-weight: normal;
-            font-size: 0.85rem;
-            margin-left: 0.5rem;
-            color: var(--text-secondary);
-          "
-          >(opcional)</small
-        >
-      </h3>
-
-      <div class="media-grid">
-        <!-- Mídia da Oferta (Imagem/Vídeo) -->
         <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-image me-2"></i>
-            Imagem/Vídeo da Oferta
-          </label>
+          <label class="form-label">Nome da Oferta *</label>
+          <input
+            type="text"
+            name="name"
+            class="form-control form-input"
+            value="{{ order_bump.name if order_bump else '' }}"
+            required
+            placeholder="Ex: Bônus Exclusivo VIP"
+          />
+        </div>
 
-          <div class="file-input-wrapper">
-            <input
-              type="file"
-              class="form-file"
-              id="offer_media_image"
-              name="offer_media_image"
-              accept="image/*,video/mp4,video/avi,video/mov,video/mkv,video/webm"
-              onchange="handleMediaUpload(this, 'offerMediaPreview')"
-            />
-            <label for="offer_media_image" class="file-label">
-              <i class="fas fa-cloud-upload-alt me-2"></i>
-              <span class="upload-text">Escolher Mídia</span>
-              <span class="upload-limit">(Máx: 50MB)</span>
+        <div class="form-group">
+          <label class="form-label">Preço (R$) *</label>
+          <input
+            type="number"
+            name="price"
+            class="form-control form-input"
+            step="0.01"
+            min="0"
+            value="{{ order_bump.order_bump_config.price if order_bump and order_bump.order_bump_config else '' }}"
+            required
+            placeholder="Ex: 19.90"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mensagem da Oferta *</label>
+          <textarea
+            name="message"
+            class="form-control form-textarea"
+            rows="6"
+            required
+            placeholder="🎁 OFERTA ESPECIAL!&#10;&#10;Ganhe acesso ao conteúdo bônus por apenas R$ 19,90!"
+          >
+{{ order_bump.message if order_bump else '' }}</textarea
+          >
+          <small class="form-hint"
+            >Mensagem que será exibida ao cliente quando a oferta
+            aparecer</small
+          >
+        </div>
+
+        <h3 class="section-title">
+          <i class="fas fa-photo-video me-2"></i>
+          Mídias da Oferta
+          <small
+            style="
+              font-weight: normal;
+              font-size: 0.85rem;
+              margin-left: 0.5rem;
+              color: var(--text-secondary);
+            "
+            >(opcional)</small
+          >
+        </h3>
+
+        <div class="media-grid">
+          <!-- Mídia da Oferta (Imagem/Vídeo) -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-image me-2"></i>
+              Imagem/Vídeo da Oferta
             </label>
+
+            <div class="file-input-wrapper">
+              <input
+                type="file"
+                class="form-file"
+                id="offer_media_image"
+                name="offer_media_image"
+                accept="image/*,video/mp4,video/avi,video/mov,video/mkv,video/webm"
+                onchange="handleMediaUpload(this, 'offerMediaPreview')"
+              />
+              <label for="offer_media_image" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                <span class="upload-text">Escolher Mídia</span>
+                <span class="upload-limit">(Máx: 50MB)</span>
+              </label>
+            </div>
+
+            <div
+              id="offerMediaPreview"
+              class="media-preview"
+              style="display: none"
+            ></div>
+
+            <small class="form-hint">
+              Imagem ou vídeo que será exibido junto com a oferta
+            </small>
           </div>
 
-          <div
-            id="offerMediaPreview"
-            class="media-preview"
-            style="display: none"
-          ></div>
+          <!-- Áudio da Oferta -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-volume-up me-2"></i>
+              Áudio da Oferta
+            </label>
 
+            <div class="file-input-wrapper">
+              <input
+                type="file"
+                class="form-file"
+                id="offer_media_audio"
+                name="offer_media_audio"
+                accept="audio/ogg"
+                onchange="handleAudioUpload(this, 'offerAudioPreview')"
+              />
+              <label for="offer_media_audio" class="file-label">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                <span class="upload-text">Escolher Áudio</span>
+                <span class="upload-limit">(Máx: 25MB)</span>
+              </label>
+            </div>
+
+            <div
+              id="offerAudioPreview"
+              class="media-preview"
+              style="display: none"
+            ></div>
+
+            <small class="form-hint"
+              >Áudio que será enviado junto com a oferta (formato OGG)</small
+            >
+          </div>
+        </div>
+
+        <h3 class="section-title">
+          <i class="fas fa-gift me-2"></i>
+          Entregável
+          <small
+            style="
+              font-weight: normal;
+              font-size: 0.85rem;
+              margin-left: 0.5rem;
+              color: var(--text-secondary);
+            "
+            >(O que o cliente recebe)</small
+          >
+        </h3>
+
+        <div class="form-group">
+          <label class="form-label">Mensagem do Entregável</label>
+          <textarea
+            name="deliverable_message"
+            class="form-control form-textarea"
+            rows="5"
+            placeholder="🎉 Parabéns! Aqui está seu bônus exclusivo:&#10;&#10;📌 Link de acesso: https://t.me/+abcdEFG12345&#10;📌 Aproveite!"
+          >
+{{ order_bump.deliverable_message if order_bump else '' }}</textarea
+          >
           <small class="form-hint">
-            Imagem ou vídeo que será exibido junto com a oferta
+            Mensagem que será enviada ao cliente após confirmar o pagamento do
+            Order Bump
           </small>
         </div>
 
-        <!-- Áudio da Oferta -->
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-volume-up me-2"></i>
-            Áudio da Oferta
-          </label>
-
-          <div class="file-input-wrapper">
+        <h3 class="section-title">
+          <i class="fas fa-mouse-pointer me-2"></i>
+          Botões
+        </h3>
+        <div class="media-grid">
+          <div class="form-group">
+            <label class="form-label">Texto do Botão de Aceitar *</label>
             <input
-              type="file"
-              class="form-file"
-              id="offer_media_audio"
-              name="offer_media_audio"
-              accept="audio/ogg"
-              onchange="handleAudioUpload(this, 'offerAudioPreview')"
+              type="text"
+              name="accept_button_text"
+              class="form-control form-input"
+              value="{{ order_bump.accept_button_text if order_bump else 'SIM! Quero essa oferta ✅' }}"
+              required
+              placeholder="SIM! Quero essa oferta ✅"
             />
-            <label for="offer_media_audio" class="file-label">
-              <i class="fas fa-cloud-upload-alt me-2"></i>
-              <span class="upload-text">Escolher Áudio</span>
-              <span class="upload-limit">(Máx: 25MB)</span>
-            </label>
           </div>
 
-          <div
-            id="offerAudioPreview"
-            class="media-preview"
-            style="display: none"
-          ></div>
+          <div class="form-group">
+            <label class="form-label">Texto do Botão de Recusar *</label>
+            <input
+              type="text"
+              name="decline_button_text"
+              class="form-control form-input"
+              value="{{ order_bump.decline_button_text if order_bump else 'Não, obrigado ❌' }}"
+              required
+              placeholder="Não, obrigado ❌"
+            />
+          </div>
+        </div>
 
-          <small class="form-hint"
-            >Áudio que será enviado junto com a oferta (formato OGG)</small
-          >
+        <h3 class="section-title">
+          <i class="fas fa-toggle-on me-2"></i>
+          Status
+        </h3>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_active" {{ 'checked' if order_bump
+            and order_bump.is_active else '' }} />
+            <span>Ativar Order Bump</span>
+          </label>
+          <small class="form-hint" style="margin-left: 30px">
+            Quando ativo, a oferta será exibida após seleção de plano
+          </small>
         </div>
       </div>
-    </div>
 
-    <!-- Entregável (O que o cliente recebe após pagar) -->
-    <div class="chart-card" style="margin-bottom: 24px">
-      <h3 class="section-title">
-        <i class="fas fa-gift me-2"></i>
-        Entregável
-        <small
-          style="
-            font-weight: normal;
-            font-size: 0.85rem;
-            margin-left: 0.5rem;
-            color: var(--text-secondary);
-          "
-          >(O que o cliente recebe)</small
-        >
-      </h3>
-
-      <div class="form-group">
-        <label class="form-label">Mensagem do Entregável</label>
-        <textarea
-          name="deliverable_message"
-          class="form-control"
-          rows="5"
-          placeholder="🎉 Parabéns! Aqui está seu bônus exclusivo:&#10;&#10;📌 Link de acesso: https://t.me/+abcdEFG12345&#10;📌 Material complementar: [link]&#10;&#10;Aproveite!"
-        >
-{{ order_bump.deliverable_message if order_bump else '' }}</textarea
-        >
-        <small class="form-hint">
-          Mensagem que será enviada ao cliente após confirmar o pagamento do
-          Order Bump
-        </small>
+      <!-- Ações -->
+      <div class="form-actions">
+        <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
+          <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-save"></i> Salvar Order Bump
+        </button>
       </div>
-    </div>
-
-    <!-- Botões -->
-    <div class="chart-card" style="margin-bottom: 24px">
-      <h3 class="section-title">
-        <i class="fas fa-mouse-pointer me-2"></i>
-        Botões
-      </h3>
-
-      <div class="form-group">
-        <label class="form-label">Texto do Botão de Aceitar *</label>
-        <input
-          type="text"
-          name="accept_button_text"
-          class="form-control"
-          value="{{ order_bump.accept_button_text if order_bump else 'SIM! Quero essa oferta ✅' }}"
-          required
-          placeholder="SIM! Quero essa oferta ✅"
-        />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Texto do Botão de Recusar *</label>
-        <input
-          type="text"
-          name="decline_button_text"
-          class="form-control"
-          value="{{ order_bump.decline_button_text if order_bump else 'Não, obrigado ❌' }}"
-          required
-          placeholder="Não, obrigado ❌"
-        />
-      </div>
-    </div>
-
-    <!-- Status -->
-    <div class="chart-card" style="margin-bottom: 24px">
-      <h3 class="section-title">
-        <i class="fas fa-toggle-on me-2"></i>
-        Status
-      </h3>
-
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" name="is_active" {{ 'checked' if order_bump and
-          order_bump.is_active else '' }} />
-          <span>Ativar Order Bump</span>
-        </label>
-        <small class="form-hint" style="margin-left: 30px">
-          Quando ativo, a oferta será exibida após seleção de plano
-        </small>
-      </div>
-    </div>
-
-    <!-- Ações -->
-    <div class="form-actions">
-      <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
-        <i class="fas fa-arrow-left"></i> Voltar
-      </a>
-      <button type="submit" class="btn-primary">
-        <i class="fas fa-save"></i> Salvar Order Bump
-      </button>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -427,61 +419,102 @@
   }
 </script>
 
+{% endblock %} {% block scripts %}
 <style>
-  .chart-card {
+  /* Create Bot Form Styles */
+  .form-container {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  .form-card {
     background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+  }
+
+  .bot-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .form-section {
+    background: var(--section-bg);
     border-radius: 16px;
-    padding: 1.5rem;
-    border: 1px solid var(--border);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
   }
 
   .section-title {
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--purple);
     display: flex;
     align-items: center;
   }
 
-  .form-group {
-    margin-bottom: 1.25rem;
+  .section-title i {
+    color: var(--primary-color);
+  }
+
+  .required {
+    color: #ef4444;
+    font-weight: 700;
   }
 
   .form-label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
     color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
     font-size: 0.95rem;
   }
 
-  .form-control {
+  .form-input,
+  .form-textarea,
+  .form-select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
+    font-family: inherit;
   }
 
-  .form-control:focus {
-    outline: none;
-    border-color: var(--purple);
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    outline: 1px solid white;
+    border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.5;
   }
 
   .form-hint {
     display: block;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
     color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
   }
 
+  .group-id-input {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.9rem;
+  }
+
+  /* Media Upload Styles */
   .media-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -490,7 +523,6 @@
 
   .file-input-wrapper {
     position: relative;
-    margin-bottom: 0.5rem;
   }
 
   .form-file {
@@ -507,30 +539,314 @@
     justify-content: center;
     padding: 1rem;
     background: var(--bg-primary);
-    border: 2px dashed var(--border);
-    border-radius: 8px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.3s ease;
+    font-weight: 500;
   }
 
   .file-label:hover {
-    border-color: var(--purple);
-    color: var(--purple);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
     background: rgba(139, 92, 246, 0.05);
   }
 
+  /* Plans Styles */
+  .plans-container {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plans-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--section-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .plan-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .plan-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .btn-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+  }
+
+  .btn-remove:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  .add-plan-btn {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  /* Groups Grid */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Info Cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .info-card {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .info-card.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .info-card.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .info-card.success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .info-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .info-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .info-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .btn-secondary {
+    background: var(--secondary-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-secondary:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+  }
+
+  /* Error Display */
+  .error-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(239, 68, 68, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .error-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .error-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .error-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .error-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Success Display */
+  .success-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: rgba(34, 197, 94, 0.95);
+    color: white;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: slideInRight 0.4s ease-out;
+  }
+
+  .success-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .success-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .success-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .success-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Button Loading State */
+  .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 0.5rem;
+  }
+
+  /* File Selection Feedback Styles */
   .file-label.file-selected {
     background: rgba(139, 92, 246, 0.1);
-    border-color: var(--purple);
-    color: var(--purple);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+
+  .file-label.file-selected:hover {
+    background: rgba(139, 92, 246, 0.15);
   }
 
   .media-preview {
+    margin-top: 1rem;
     padding: 1rem;
     background: var(--bg-secondary);
-    border-radius: 8px;
-    border: 1px solid var(--border);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
   }
 
   .file-info {
@@ -543,20 +859,22 @@
   .file-icon {
     width: 40px;
     height: 40px;
-    background: var(--purple);
+    background: var(--primary-color);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
+    font-size: 1.2rem;
   }
 
   .file-details {
     flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .file-name {
-    display: block;
     color: var(--text-primary);
     font-weight: 500;
     font-size: 0.9rem;
@@ -564,7 +882,6 @@
   }
 
   .file-size {
-    display: block;
     color: var(--text-secondary);
     font-size: 0.8rem;
   }
@@ -580,22 +897,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
   }
 
   .remove-file-btn:hover {
     background: #dc2626;
+    transform: scale(1.05);
   }
 
   .media-preview-img {
     max-width: 100%;
     max-height: 200px;
     border-radius: 8px;
+    object-fit: cover;
   }
 
   .media-preview-video {
     max-width: 100%;
     max-height: 200px;
     border-radius: 8px;
+    background: #000;
+  }
+
+  .file-type {
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
   }
 
   .audio-preview {
@@ -603,76 +931,55 @@
     height: 40px;
   }
 
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-
-  .checkbox-label input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    cursor: pointer;
-  }
-
-  .checkbox-label span {
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-    transition: all 0.3s ease;
-  }
-
-  .btn-primary {
-    background: var(--purple);
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: var(--purple-dark);
-    transform: translateY(-2px);
-  }
-
-  .btn-secondary {
-    background: var(--secondary-bg);
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
-  }
-
+  /* Responsive */
   @media (max-width: 768px) {
-    .media-grid {
+    .form-container {
+      padding: 1rem;
+    }
+
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .media-grid,
+    .groups-grid,
+    .info-cards {
       grid-template-columns: 1fr;
+    }
+
+    .plans-header,
+    .plan-item {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .plan-col-actions {
+      justify-self: end;
     }
 
     .form-actions {
       flex-direction: column-reverse;
     }
+
+    .error-display,
+    .success-display {
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      max-width: none;
+    }
+
+    #mb {
+      margin-bottom: 5px;
+    }
+  }
+
+  form i {
+    margin-right: 12px;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
   }
 </style>
-
 {% endblock %}
