@@ -3,6 +3,7 @@
 
 {% block extra_css%}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/create-bot.css') }}" >
+<script src="{{url_for('static', filename='js/form-utils.js')}}"></script>
 {% endblock %}
 
 {% block content %}
@@ -20,8 +21,36 @@
   </div>
 </header>
 
+  <!-- Error Display -->
+  <div id="errorDisplay" class="error-display" style="display: none;">
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle"></i>
+      <div class="error-text">
+        <strong id="errorTitle">Erro ao salvar</strong>
+        <span id="errorMessage"></span>
+      </div>
+      <button type="button" onclick="hideError()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Display -->
+  <div id="successDisplay" class="success-display" style="display: none;">
+    <div class="success-content">
+      <i class="fas fa-check-circle"></i>
+      <div class="success-text">
+        <strong id="successTitle">Salvo com sucesso!</strong>
+        <span id="successMessage">Order Bump atualizado.</span>
+      </div>
+      <button type="button" onclick="hideSuccess()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
   <div class="form-container">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" class="order-bump-form">
       <!-- Informações Básicas -->
       <div class="chart-card" style="margin-bottom: 24px">
 
@@ -199,191 +228,45 @@
         <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary">
           <i class="fas fa-arrow-left"></i> Voltar
         </a>
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-save"></i> Salvar Order Bump
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <i class="fas fa-save"></i> <span id="submitText">Salvar Order Bump</span>
+          <div class="btn-spinner" style="display: none;"></div>
         </button>
       </div>
     </form>
   </div>
 </div>
 
+
 <script>
-  // Função para lidar com upload de mídia
-  function handleMediaUpload(input, previewId) {
-    const file = input.files[0];
-    const previewContainer = document.getElementById(previewId);
-    const fileLabel = input.nextElementSibling;
-    const uploadText = fileLabel.querySelector(".upload-text");
-    const uploadLimit = fileLabel.querySelector(".upload-limit");
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form.order-bump-form');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (document.getElementById('submitBtn')?.disabled) return;
 
-    if (file) {
-      // Validar formato
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-        "video/mp4",
-        "video/avi",
-        "video/quicktime",
-        "video/x-msvideo",
-        "video/webm",
-        "video/x-matroska",
-      ];
+      const check = validateOrderBumpSection({ form });
+      if (!check.ok) { showError(check.title, check.message); return; }
 
-      if (!allowedTypes.includes(file.type.toLowerCase())) {
-        alert(
-          "Formato não suportado! Use: JPG, PNG, GIF, WebP, MP4, AVI, MOV, MKV, WebM"
-        );
-        input.value = "";
-        return;
+      try {
+        showLoading({ submitLoadingText: 'Salvando...' });
+        const fd = new FormData(form);
+        const resp = await fetch(form.action || window.location.href, { method: 'POST', body: fd });
+        if (resp.ok) {
+          hideLoading();
+          showSuccess('Order Bump salvo!', 'As alterações foram aplicadas.');
+          setTimeout(() => { window.location.href = "{{ url_for('bots.list_bots') }}"; }, 1200);
+        } else {
+          const text = await resp.text();
+          throw new Error(text || `Erro HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        hideLoading();
+        showError('Erro ao salvar', String(err?.message || err));
       }
-
-      // Validar tamanho
-      const isVideo = file.type.startsWith("video/");
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
-
-      if (file.size > maxSize) {
-        const maxSizeMB = maxSize / 1024 / 1024;
-        const fileSizeMB = file.size / 1024 / 1024;
-        alert(
-          `Arquivo muito grande! Tamanho: ${fileSizeMB.toFixed(
-            1
-          )}MB, Máximo: ${maxSizeMB}MB`
-        );
-        input.value = "";
-        return;
-      }
-
-      // Atualizar visual
-      uploadText.textContent = file.name;
-      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
-      fileLabel.classList.add("file-selected");
-
-      // Preview
-      previewContainer.style.display = "block";
-      const isImage = file.type.startsWith("image/");
-
-      let previewHTML = `
-      <div class="file-info">
-        <div class="file-icon">
-          <i class="fas fa-${
-            isImage ? "image" : isVideo ? "video" : "file"
-          }"></i>
-        </div>
-        <div class="file-details">
-          <span class="file-name">${file.name}</span>
-          <span class="file-size">${formatFileSize(file.size)}</span>
-        </div>
-        <button type="button" class="remove-file-btn" onclick="clearSelection('${
-          input.id
-        }', '${previewId}')">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    `;
-
-      if (isImage) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          previewHTML += `<img src="${e.target.result}" class="media-preview-img">`;
-          previewContainer.innerHTML = previewHTML;
-        };
-        reader.readAsDataURL(file);
-      } else if (isVideo) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          previewHTML += `<video controls class="media-preview-video"><source src="${e.target.result}" type="${file.type}"></video>`;
-          previewContainer.innerHTML = previewHTML;
-        };
-        reader.readAsDataURL(file);
-      } else {
-        previewContainer.innerHTML = previewHTML;
-      }
-    }
-  }
-
-  // Função para áudio
-  function handleAudioUpload(input, previewId) {
-    const file = input.files[0];
-    const previewContainer = document.getElementById(previewId);
-    const fileLabel = input.nextElementSibling;
-    const uploadText = fileLabel.querySelector(".upload-text");
-    const uploadLimit = fileLabel.querySelector(".upload-limit");
-
-    if (file) {
-      const allowedAudioTypes = ["audio/ogg", "audio/opus", "application/ogg"];
-
-      if (
-        !allowedAudioTypes.includes(file.type.toLowerCase()) &&
-        !file.name.toLowerCase().endsWith(".ogg")
-      ) {
-        alert("Formato não suportado! Use apenas arquivos OGG.");
-        input.value = "";
-        return;
-      }
-
-      const maxSize = 20 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert(`Áudio muito grande! Máximo: 20MB`);
-        input.value = "";
-        return;
-      }
-
-      uploadText.textContent = file.name;
-      uploadLimit.textContent = `(${formatFileSize(file.size)})`;
-      fileLabel.classList.add("file-selected");
-
-      previewContainer.style.display = "block";
-      previewContainer.innerHTML = `
-      <div class="file-info">
-        <div class="file-icon"><i class="fas fa-music"></i></div>
-        <div class="file-details">
-          <span class="file-name">${file.name}</span>
-          <span class="file-size">${formatFileSize(file.size)}</span>
-        </div>
-        <button type="button" class="remove-file-btn" onclick="clearSelection('${
-          input.id
-        }', '${previewId}')">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <audio controls class="audio-preview"><source src="${URL.createObjectURL(
-        file
-      )}" type="${file.type}"></audio>
-    `;
-    }
-  }
-
-  // Limpar seleção
-  function clearSelection(inputId, previewId) {
-    const input = document.getElementById(inputId);
-    const previewContainer = document.getElementById(previewId);
-    const fileLabel = input.nextElementSibling;
-    const uploadText = fileLabel.querySelector(".upload-text");
-    const uploadLimit = fileLabel.querySelector(".upload-limit");
-
-    input.value = "";
-    previewContainer.style.display = "none";
-    previewContainer.innerHTML = "";
-    uploadText.textContent = inputId.includes("audio")
-      ? "Escolher Áudio"
-      : "Escolher Mídia";
-    uploadLimit.textContent = inputId.includes("audio")
-      ? "(Máx: 25MB)"
-      : "(Máx: 50MB)";
-    fileLabel.classList.remove("file-selected");
-  }
-
-  // Formatar tamanho
-  function formatFileSize(bytes) {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
+    });
+  });
 </script>
+
 
 {% endblock %} 
