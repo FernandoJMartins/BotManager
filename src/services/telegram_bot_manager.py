@@ -888,7 +888,8 @@ Entre em contato com o suporte."""
             )
         
         if order_bump.media_audio_file_id:
-            await update.message.reply_voice(
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
                 voice=order_bump.media_audio_file_id,
                 read_timeout=45,
                 write_timeout=45,
