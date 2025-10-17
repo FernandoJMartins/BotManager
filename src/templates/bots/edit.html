@@ -389,6 +389,21 @@
         </div>
       </div>
 
+      <!-- Loading Overlay -->
+      <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <h4 id="loadingTitle">Salvando alterações...</h4>
+          <p id="loadingMessage">Validando dados do formulário...</p>
+          <div class="loading-steps">
+            <div class="step" id="step1">⏳ Validando dados</div>
+            <div class="step" id="step2">⏳ Processando mídias (se houver)</div>
+            <div class="step" id="step3">⏳ Atualizando bot</div>
+            <div class="step" id="step4">⏳ Concluindo</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Botões de Ação -->
       <div class="form-actions">
         <a href="{{ url_for('bots.list_bots') }}" class="btn-secondary" id="cancelBtn">
@@ -406,10 +421,14 @@
 </div>
 
 <script>
-  // Bootstrapping mínimo: usa utilitários compartilhados
+  // Bootstrapping com helper DRY do form-utils
   document.addEventListener('DOMContentLoaded', () => {
     initPlanManager();
-    // As funções handleMediaUpload/handleAudioUpload/formatGroupId já estão globais via form-utils
+    registerBotSubmitWithTelegramChecks({
+      successTitle: 'Bot atualizado com sucesso! ✅',
+      successMessage: 'As configurações foram salvas...',
+      submitLoadingText: 'Validando...'
+    });
   });
 </script>
 

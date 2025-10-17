@@ -703,3 +703,197 @@ function validateOrderBumpSection(cfg) {
   return { ok: true };
 }
 window.validateOrderBumpSection = validateOrderBumpSection;
+
+// ==================== SUBMIT HELPER (DRY) ====================
+/**
+ * Registra um submit handler padrão com loading + sucesso/erro.
+ * Útil para telas simples (ex.: editar bot) onde basta enviar o formulário.
+ *
+ * opts: {
+ *   formSelector?: string (default 'form.bot-form')
+ *   validatePlans?: boolean (default true)
+ *   successTitle?: string
+ *   successMessage?: string
+ *   redirectUrl?: string
+ *   submitLoadingText?: string (default 'Salvando...')
+ * }
+ */
+function registerSimpleFormSubmit(opts = {}) {
+  const form = document.querySelector(opts.formSelector || "form.bot-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById(FormUtilsConfig.submitBtnId);
+    if (submitBtn?.disabled) return;
+
+    // Validação mínima de planos (opcional)
+    if (opts.validatePlans !== false) {
+      const planCheck = validatePlanSection({
+        pixSelector: 'input[name="pix_values[]"]',
+        nameSelector: 'input[name="plan_names[]"]',
+        durationSelector: 'select[name="plan_duration[]"]',
+      });
+      if (!planCheck.ok) {
+        showError(planCheck.title, planCheck.message);
+        return;
+      }
+    }
+
+    showLoading({ submitLoadingText: opts.submitLoadingText || "Salvando..." });
+    try {
+      updateLoadingStep(1, "active", {
+        messages: { 1: "Validando dados...", 4: "Salvando alterações..." },
+      });
+      updateLoadingStep(1, "completed");
+      updateLoadingStep(4, "active");
+
+      const formData = new FormData(form);
+      const resp = await fetch(form.action || window.location.href, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (resp.ok) {
+        updateLoadingStep(4, "completed");
+        hideLoading();
+        showSuccess(
+          opts.successTitle || "Salvo com sucesso! ✅",
+          opts.successMessage || "Alterações salvas."
+        );
+        setTimeout(() => {
+          window.location.href =
+            opts.redirectUrl || resp.url || window.location.href;
+        }, 1200);
+      } else {
+        const text = await resp.text();
+        throw new Error(text || `Erro HTTP ${resp.status}`);
+      }
+    } catch (err) {
+      hideLoading();
+      const msg = String(err?.message || err);
+      showError("Erro ao salvar", msg);
+    }
+  });
+}
+window.registerSimpleFormSubmit = registerSimpleFormSubmit;
+
+/**
+ * Submissão com validações completas do Telegram (mesmo fluxo do create):
+ * - valida planos, token, ids de grupo
+ * - valida bot nos grupos (VIP e logs) via Telegram API
+ * - envia formulário com fetch e mostra feedback
+ *
+ * opts: {
+ *   formSelector?: string,
+ *   successTitle?: string,
+ *   successMessage?: string,
+ *   redirectUrl?: string,
+ *   submitLoadingText?: string (default 'Validando...')
+ * }
+ */
+function registerBotSubmitWithTelegramChecks(opts = {}) {
+  const form = document.querySelector(opts.formSelector || "form.bot-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById(FormUtilsConfig.submitBtnId);
+    if (submitBtn?.disabled) return;
+
+    // 1) Validação de planos
+    const planCheck = validatePlanSection({
+      pixSelector: 'input[name="pix_values[]"]',
+      nameSelector: 'input[name="plan_names[]"]',
+      durationSelector: 'select[name="plan_duration[]"]',
+    });
+    if (!planCheck.ok) {
+      showError(planCheck.title, planCheck.message);
+      return;
+    }
+
+    // 2) Token e grupos
+    const token = document.getElementById("token")?.value?.trim();
+    if (!validateTelegramToken(token)) {
+      showError(
+        "Token Inválido",
+        "Token do bot inválido! Verifique se copiou corretamente do @BotFather."
+      );
+      return;
+    }
+    const idVip = document.getElementById("id_vip")?.value?.trim();
+    const idLogs = document.getElementById("id_logs")?.value?.trim();
+    if (!validateGroupId(idVip)) {
+      showError(
+        "Grupo VIP Inválido",
+        "O ID do Grupo VIP deve começar com '-' (ex: -1001234567890)"
+      );
+      return;
+    }
+    if (!validateGroupId(idLogs)) {
+      showError(
+        "Grupo de Notificações Inválido",
+        "O ID do Grupo de Notificações deve começar com '-' (ex: -1001234567890)"
+      );
+      return;
+    }
+
+    // 3) Loading + validação no Telegram
+    showLoading({
+      submitLoadingText: opts.submitLoadingText || "Validando...",
+    });
+    try {
+      const stepMessages = (opts && opts.stepMessages) || {
+        1: "Verificando se o token é válido...",
+        2: "Testando acesso ao grupo VIP como admin...",
+        3: "Testando acesso ao grupo de notificações como admin...",
+        4: "Salvando alterações...",
+      };
+      updateLoadingStep(1, "active", { messages: stepMessages });
+      await validateBotInGroups(token, idVip, idLogs);
+      updateLoadingStep(1, "completed");
+
+      // 4) Envia formulário
+      updateLoadingStep(4, "active", { messages: stepMessages });
+      const formData = new FormData(form);
+      const resp = await fetch(form.action || window.location.href, {
+        method: "POST",
+        body: formData,
+      });
+      if (resp.ok) {
+        updateLoadingStep(4, "completed", { messages: stepMessages });
+        hideLoading();
+        showSuccess(
+          opts.successTitle || "Salvo com sucesso! ✅",
+          opts.successMessage || "Alterações salvas."
+        );
+        setTimeout(() => {
+          window.location.href =
+            opts.redirectUrl || resp.url || window.location.href;
+        }, 1200);
+      } else {
+        const text = await resp.text();
+        throw new Error(text || `Erro HTTP ${resp.status}`);
+      }
+    } catch (err) {
+      hideLoading();
+      const msg = String(err?.message || err);
+      let title = "Erro ao validar";
+      let message = msg;
+      if (msg.includes("Token inválido")) {
+        title = "Token Inválido";
+        message =
+          "O token do bot é inválido ou expirou. Verifique e tente novamente.";
+      } else if (msg.toLowerCase().includes("vip")) {
+        title = "Problema no Grupo VIP";
+        message = `Verifique se o bot está no grupo VIP e é administrador (${idVip}).`;
+      } else if (msg.toLowerCase().includes("notific")) {
+        title = "Problema no Grupo de Notificações";
+        message = `Verifique se o bot está no grupo de notificações e é administrador (${idLogs}).`;
+      }
+      showError(title, message);
+    }
+  });
+}
+window.registerBotSubmitWithTelegramChecks =
+  registerBotSubmitWithTelegramChecks;
