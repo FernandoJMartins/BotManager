@@ -64,14 +64,14 @@
                 <span>Dashboard</span>
               </a>
             </li>
-            <li
-              class="nav-item {% if request.endpoint == 'bots.list_bots' %}active{% endif %}"
-            >
-              <a href="{{ url_for('bots.list_bots') }}" class="nav-link">
-                <i class="fas fa-robot"></i>
-                <span>Todos os bots</span>
+
+            <li class="nav-item">
+              <a href="#" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
               </a>
             </li>
+
             <li
               class="nav-item {% if request.endpoint == 'bots.create_bot' %}active{% endif %}"
             >
@@ -80,21 +80,16 @@
                 <span>Criar bot</span>
               </a>
             </li>
+
             <li
-              class="nav-item {% if 'client' in request.endpoint %}active{% endif %}"
+              class="nav-item {% if request.endpoint == 'bots.list_bots' %}active{% endif %}"
             >
-              <a href="#" class="nav-link">
-                <i class="fas fa-users"></i>
-                <span>Clientes</span>
+              <a href="{{ url_for('bots.list_bots') }}" class="nav-link">
+                <i class="fas fa-robot"></i>
+                <span>Meus bots</span>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="fas fa-chart-bar"></i>
-                <span>Relatórios</span>
-                <i class="fas fa-chevron-right arrow"></i>
-              </a>
-            </li>
+
             <li
               class="nav-item {% if request.endpoint == 'auth.profile' %}active{% endif %}"
             >
