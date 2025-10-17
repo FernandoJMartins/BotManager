@@ -559,3 +559,7 @@ h4 i,
 .info-header i {
   margin-right: 12px;
 }
+
+#config-mt {
+  margin-top: 16px;
+}
