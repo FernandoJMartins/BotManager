@@ -24,13 +24,9 @@
     <form method="POST" enctype="multipart/form-data">
       <!-- Informações Básicas -->
       <div class="chart-card" style="margin-bottom: 24px">
-        <h3 class="section-title">
-          <i class="fas fa-info-circle me-2"></i>
-          Informações Básicas
-        </h3>
 
         <div class="form-group">
-          <label class="form-label">Nome da Oferta *</label>
+          <label class="form-label">Nome da Oferta <span class="required">*</span></label>
           <input
             type="text"
             name="name"
@@ -42,7 +38,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Preço (R$) *</label>
+          <label class="form-label">Preço (R$) <span class="required">*</span></label>
           <input
             type="number"
             name="price"
@@ -56,7 +52,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Mensagem da Oferta *</label>
+          <label class="form-label">Mensagem da Oferta <span class="required">*</span></label>
           <textarea
             name="message"
             class="form-control form-textarea"
@@ -71,20 +67,6 @@
             aparecer</small
           >
         </div>
-
-        <h3 class="section-title">
-          <i class="fas fa-photo-video me-2"></i>
-          Mídias da Oferta
-          <small
-            style="
-              font-weight: normal;
-              font-size: 0.85rem;
-              margin-left: 0.5rem;
-              color: var(--text-secondary);
-            "
-            >(opcional)</small
-          >
-        </h3>
 
         <div class="media-grid">
           <!-- Mídia da Oferta (Imagem/Vídeo) -->
@@ -156,24 +138,12 @@
           </div>
         </div>
 
-        <h3 class="section-title">
-          <i class="fas fa-gift me-2"></i>
-          Entregável
-          <small
-            style="
-              font-weight: normal;
-              font-size: 0.85rem;
-              margin-left: 0.5rem;
-              color: var(--text-secondary);
-            "
-            >(O que o cliente recebe)</small
-          >
-        </h3>
-
         <div class="form-group">
-          <label class="form-label">Mensagem do Entregável</label>
+          
+          <label class="form-label"><i class="fas fa-gift me-2"></i>Mensagem do Entregável<span class="required">*</span></label>
           <textarea
             name="deliverable_message"
+            required
             class="form-control form-textarea"
             rows="5"
             placeholder="🎉 Parabéns! Aqui está seu bônus exclusivo:&#10;&#10;📌 Link de acesso: https://t.me/+abcdEFG12345&#10;📌 Aproveite!"
@@ -186,13 +156,9 @@
           </small>
         </div>
 
-        <h3 class="section-title">
-          <i class="fas fa-mouse-pointer me-2"></i>
-          Botões
-        </h3>
         <div class="media-grid">
           <div class="form-group">
-            <label class="form-label">Texto do Botão de Aceitar *</label>
+            <label class="form-label">Texto do Botão de Aceitar <span class="required">*</span></label>
             <input
               type="text"
               name="accept_button_text"
@@ -204,7 +170,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Texto do Botão de Recusar *</label>
+            <label class="form-label">Texto do Botão de Recusar <span class="required">*</span></label>
             <input
               type="text"
               name="decline_button_text"
@@ -216,18 +182,13 @@
           </div>
         </div>
 
-        <h3 class="section-title">
-          <i class="fas fa-toggle-on me-2"></i>
-          Status
-        </h3>
-
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" name="is_active" {{ 'checked' if order_bump
+            <input type="checkbox" name="is_active" id="is_active" {{ 'checked' if order_bump
             and order_bump.is_active else '' }} />
             <span>Ativar Order Bump</span>
           </label>
-          <small class="form-hint" style="margin-left: 30px">
+          <small class="form-hint">
             Quando ativo, a oferta será exibida após seleção de plano
           </small>
         </div>
